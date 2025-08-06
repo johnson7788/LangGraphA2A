@@ -21,7 +21,7 @@ async def main() -> None:
 
     base_url = 'http://localhost:10000'
 
-    async with httpx.AsyncClient(timeout=30.0) as httpx_client:
+    async with httpx.AsyncClient(timeout=60.0) as httpx_client:
         resolver = A2ACardResolver(httpx_client=httpx_client, base_url=base_url)
         final_agent_card_to_use: AgentCard | None = None
 
