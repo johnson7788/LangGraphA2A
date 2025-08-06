@@ -6,8 +6,14 @@
 # @Contact : github: johnson7788
 # @Desc  :
 import os
+import httpx
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
+
+http_client = httpx.Client(proxies={
+    os.getenv("HTTP_PROXY"),
+    os.getenv("HTTPS_PROXY"),
+})
 def create_model():
     MODEL_PROVIDER = os.getenv('MODEL_PROVIDER')
     LLM_MODEL = os.getenv('LLM_MODEL')
@@ -19,6 +25,7 @@ def create_model():
             model=os.getenv('LLM_MODEL'),
             openai_api_key=os.getenv('OPENAI_API_KEY'),
             temperature=0,
+            http_client=http_client
         )
     elif MODEL_PROVIDER == "deepseek":
         model = ChatOpenAI(
