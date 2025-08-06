@@ -87,6 +87,7 @@ class KnowledgeAgent:
     def get_agent_response(self, config):
         current_state = self.graph.get_state(config)
         structured_response = current_state.values.get('structured_response')
+        print(f"Agent输出:structured_response.message: {structured_response.message}")
         if structured_response and isinstance(structured_response, ResponseFormat):
             if structured_response.status == 'error':
                 return {
