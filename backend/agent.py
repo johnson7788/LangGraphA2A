@@ -16,10 +16,6 @@ dotenv.load_dotenv()
 #记忆是必须的
 memory = MemorySaver()
 
-class CustomState(AgentState):
-    # The user_name field in short-term state
-    search_dbs: NotRequired[str]
-
 def pre_model_hook(state: AgentState):
     trimmed = trim_messages(
         state["messages"],
@@ -36,6 +32,11 @@ class ResponseFormat(BaseModel):
 
     status: Literal['completed', 'error'] = 'completed'
     message: str
+
+class CustomState(AgentState):
+    # The user_name field in short-term state
+    structured_response: NotRequired[ResponseFormat]
+    search_dbs: NotRequired[str]
 
 class KnowledgeAgent:
     """知识库问答 Agent"""

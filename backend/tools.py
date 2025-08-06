@@ -65,7 +65,7 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
     search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
     print(f"tool_call_id: {tool_call_id}")
     return Command(update={
-        "search_dbs": "search_document_db",
+        # "search_dbs": "search_document_db",
         "messages": [
             ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]
@@ -182,7 +182,7 @@ def search_personal_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
     search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
     print(f"tool_call_id: {tool_call_id}")
     return Command(update={
-        "search_dbs": "search_personal_db",
+        # "search_dbs": "search_personal_db",
         "messages": [
             ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]

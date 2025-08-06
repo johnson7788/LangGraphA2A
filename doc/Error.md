@@ -73,3 +73,7 @@ ERROR:agent_executor:An error occurred while streaming the response: Error code:
             ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]
     })
+
+
+# 启动Agent报错
+ERROR:__main__:启动 Agent 服务出错: Missing required key(s) {'structured_response'} in state_schema
