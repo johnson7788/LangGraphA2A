@@ -1,6 +1,7 @@
 import os
 from collections.abc import AsyncIterable
 from typing import Any, Literal
+from typing import Annotated, NotRequired
 from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langgraph.prebuilt import create_react_agent
@@ -14,6 +15,10 @@ dotenv.load_dotenv()
 
 #记忆是必须的
 memory = MemorySaver()
+
+class CustomState(AgentState):
+    # The user_name field in short-term state
+    search_dbs: NotRequired[str]
 
 def pre_model_hook(state: AgentState):
     trimmed = trim_messages(
@@ -60,6 +65,7 @@ class KnowledgeAgent:
             checkpointer=memory,
             prompt=self.SYSTEM_INSTRUCTION,
             response_format=(self.FORMAT_INSTRUCTION, ResponseFormat),
+            state_schema=CustomState,
             pre_model_hook=pre_model_hook
         )
 
@@ -70,6 +76,10 @@ class KnowledgeAgent:
         for item in self.graph.stream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
             print(f"Agent输出的message信息: {message}")
+            current_state = self.graph.get_state(config)
+            search_dbs = current_state.values.get("search_dbs")
+            print(f"search_dbs: {search_dbs}")
+            print(f"current_state.metadata: {current_state.metadata}")
             if isinstance(message, AIMessage) and message.tool_calls and len(message.tool_calls) > 0:
                 yield {
                     'is_task_complete': False,
