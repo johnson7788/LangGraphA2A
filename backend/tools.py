@@ -6,6 +6,7 @@
 # @Contact : github: johnson7788
 # @Desc  : Agent使用的工具, 设置3个知识库工具
 import httpx
+import json
 from typing import Annotated, NotRequired
 from langchain_core.tools import tool
 from langgraph.types import Command
@@ -61,11 +62,12 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
         },
     ]
     search_res = results[:max_results]
+    search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
     print(f"tool_call_id: {tool_call_id}")
     return Command(update={
         "search_dbs": "search_document_db",
         "messages": [
-            ToolMessage(search_res, tool_call_id=tool_call_id)
+            ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]
     })
     # return search_res

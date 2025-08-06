@@ -61,3 +61,15 @@ Traceback (most recent call last):
   File "/Users/admin/miniforge3/envs/a2a/lib/python3.11/site-packages/a2a/client/client.py", line 303, in _send_request
     raise A2AClientHTTPError(
 a2a.client.errors.A2AClientHTTPError: HTTP Error 503: Network communication error: 
+
+# 报错, 工具的Command返回的结果必须是String或者Object，不能是list，使用json.dumps一下即可
+INFO:httpx:HTTP Request: POST https://api.openai.com/v1/chat/completions "HTTP/1.1 400 Bad Request"
+ERROR:agent_executor:An error occurred while streaming the response: Error code: 400 - {'error': {'message': "Missing required parameter: 'messages[4].content[0].type'.", 'type': 'invalid_request_error', 'param': 'messages[4].content[0].type', 'code': 'missing_required_parameter'}}
+    search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
+    print(f"tool_call_id: {tool_call_id}")
+    return Command(update={
+        "search_dbs": "search_document_db",
+        "messages": [
+            ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
+        ]
+    })
