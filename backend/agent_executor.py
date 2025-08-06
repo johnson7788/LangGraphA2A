@@ -18,18 +18,18 @@ from a2a.utils import (
 )
 from a2a.utils.errors import ServerError
 
-from agent import CurrencyAgent
+from agent import KnowledgeAgent
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class CurrencyAgentExecutor(AgentExecutor):
-    """Currency Conversion AgentExecutor Example."""
+class KnowledgeAgentExecutor(AgentExecutor):
+    """知识问答 AgentExecutor 示例."""
 
     def __init__(self):
-        self.agent = CurrencyAgent()
+        self.agent = KnowledgeAgent()
 
     async def execute(
         self,
