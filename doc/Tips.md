@@ -79,7 +79,7 @@ def update_user_name(
 # Command 的主要作用
 Command 是一种特殊返回值类型（返回对象），允许工具函数在执行结束后 显式地更新 LangGraph 的 graph state。
 它替代了传统只返回文本的方式，使工具能够同时更新状态字段（如新增键）并发送消息给用户（通过 ToolMessage）；
-本质上，是工具主动向 graph 注入 state 更新逻辑的接口。
+本质上，是工具主动向 graph 注入 state 更新逻辑的接口。注意ToolMessage返回的数据格式，第一个参数content
 ```python
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import InjectedToolCallId, tool
