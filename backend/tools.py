@@ -62,13 +62,13 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
     ]
     search_res = results[:max_results]
     print(f"tool_call_id: {tool_call_id}")
-    # return Command(update={
-    #     "search_dbs": "search_document_db",
-    #     "messages": [
-    #         ToolMessage(search_res, tool_call_id=tool_call_id)
-    #     ]
-    # })
-    return search_res
+    return Command(update={
+        "search_dbs": "search_document_db",
+        "messages": [
+            ToolMessage(search_res, tool_call_id=tool_call_id)
+        ]
+    })
+    # return search_res
 
 
 @tool
