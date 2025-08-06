@@ -47,7 +47,6 @@ def main(host, port):
             capabilities=capabilities,
             skills=[skill],
         )
-
         # 启动服务
         httpx_client = httpx.AsyncClient()
         request_handler = DefaultRequestHandler(

@@ -69,6 +69,7 @@ class KnowledgeAgent:
 
         for item in self.graph.stream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
+            print(f"Agent输出的message信息: {message}")
             if isinstance(message, AIMessage) and message.tool_calls and len(message.tool_calls) > 0:
                 yield {
                     'is_task_complete': False,
