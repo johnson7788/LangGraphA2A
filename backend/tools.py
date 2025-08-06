@@ -6,11 +6,13 @@
 # @Contact : github: johnson7788
 # @Desc  : Agent使用的工具, 设置3个知识库工具
 import httpx
+from typing import Annotated, NotRequired
 from langchain_core.tools import tool
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage
+from langchain_core.tools import tool, InjectedToolCallId
 @tool
-def search_document_db(query: str, max_results: int = 3):
+def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], max_results: int = 3) -> Command:
     """
     模拟搜索文献库：包括标题、snippet、content、来源、时间等。
 
@@ -21,6 +23,7 @@ def search_document_db(query: str, max_results: int = 3):
     Returns:
         list: 包含文献信息的字典列表，每个字典包含title, snippet, content, source, timestamp字段
     """
+    print(f"触发了调用search_document_db: {query}")
     results = [
         {
             "title": "CuATSM 恢复 SOD1 功能：小鼠病症逆转研究",
@@ -57,11 +60,18 @@ def search_document_db(query: str, max_results: int = 3):
             "timestamp": "2025‑04‑18"
         },
     ]
-    return results[:max_results]
+    search_res = results[:max_results]
+    print(f"tool_call_id: {tool_call_id}")
+    return Command(update={
+        "search_dbs": "search_document_db",
+        "messages": [
+            ToolMessage(search_res, tool_call_id=tool_call_id)
+        ]
+    })
 
 
 @tool
-def search_guideline_db(query: str, max_results: int = 3):
+def search_guideline_db(query: str, max_results: int = 3) -> Command:
     """
     模拟搜索指南库：包括推荐内容、content 字段详实说明建议依据与适应症。
     Args:
@@ -70,6 +80,7 @@ def search_guideline_db(query: str, max_results: int = 3):
     Returns:
         list: 包含指南信息的字典列表，每个字典包含title, snippet, content, source, timestamp字段
     """
+    print(f"触发了调用search_guideline_db: {query}")
     results = [
         {
             "title": "MDS 2025：治疗运动波动的循证综述",
@@ -113,7 +124,7 @@ def search_guideline_db(query: str, max_results: int = 3):
 
 
 @tool
-def search_personal_db(query: str, max_results: int = 3):
+def search_personal_db(query: str, max_results: int = 3) -> Command:
     """
     模拟搜索个人知识库：包括个人整理的详细心得或研究笔记。
     Args:
@@ -122,6 +133,7 @@ def search_personal_db(query: str, max_results: int = 3):
     Returns:
         list: 包含个人笔记信息的字典列表，每个字典包含title, snippet, content, created字段
     """
+    print(f"触发了调用search_personal_db: {query}")
     results = [
         {
             "title": "笔记：GLP‑1 类药物在帕金森中的神经保护潜力",
