@@ -55,23 +55,6 @@ async def main() -> None:
         client = A2AClient(httpx_client=httpx_client, agent_card=final_agent_card_to_use)
         logger.info('A2AClient 初始化完成。')
 
-        # === 单轮对话 ===
-        send_message_payload: dict[str, Any] = {
-            'message': {
-                'role': 'user',
-                'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些？'}],
-                'messageId': uuid4().hex,
-            },
-        }
-        request = SendMessageRequest(
-            id=str(uuid4()),
-            params=MessageSendParams(**send_message_payload)
-        )
-
-        response = await client.send_message(request)
-        print("=== 单轮问答响应 ===")
-        print(response.model_dump(mode='json', exclude_none=True))
-
         # === 多轮对话 ===
         logger.info("开始进行多轮对话...")
 
@@ -114,7 +97,7 @@ async def main() -> None:
         print("=== 流式响应 示例 ===")
         streaming_request = SendStreamingMessageRequest(
             id=str(uuid4()),
-            params=MessageSendParams(**send_message_payload)
+            params=MessageSendParams(**multiturn_first)
         )
         stream_response = client.send_message_streaming(streaming_request)
 
