@@ -7,9 +7,13 @@ from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel
 from tools import search_document_db, search_personal_db, search_guideline_db
 from langchain_core.messages.utils import trim_messages, count_tokens_approximately
+from langgraph.checkpoint.memory import MemorySaver
 from models import create_model
 import dotenv
 dotenv.load_dotenv()
+
+#记忆是必须的
+memory = MemorySaver()
 
 def pre_model_hook(state: AgentState):
     trimmed = trim_messages(
@@ -53,6 +57,7 @@ class KnowledgeAgent:
         self.graph = create_react_agent(
             self.model,
             tools=self.tools,
+            checkpointer=memory,
             prompt=self.SYSTEM_INSTRUCTION,
             response_format=(self.FORMAT_INSTRUCTION, ResponseFormat),
             pre_model_hook=pre_model_hook
