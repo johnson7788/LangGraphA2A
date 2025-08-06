@@ -52,49 +52,22 @@ sequenceDiagram
 ## 先决条件
 
 - Python 3.12或更高版本
-- [UV](https://docs.astral.sh/uv/)
-- 访问LLM和API密钥
-
-## 设置和运行
-
-1. 导航到示例目录：
-
-   ```bash
-   cd samples/python/agents/langgraph
-   ```
+- 访问.env，配置 LLM和API密钥
+- pip install -r requirements.txt
 
 
-2. 创建包含API密钥的环境文件：
+1. 运行代理：
 
    ```bash
-   如果您使用Google Gemini模型（gemini-pro等）：
-   echo "GOOGLE_API_KEY=your_api_key_here" > .env
-  
-   
-   如果您使用OpenAI或任何兼容的API（例如通过Ollama、LM Studio等的本地LLM）：
-
-   echo "API_KEY=your_api_key_here" > .env  （如果没有API密钥则不需要）
-   echo "TOOL_LLM_URL=your_llm_url" > .env
-   echo "TOOL_LLM_NAME=your_llm_name" > .env
-
-   ```
-
-
-3. 运行代理：
-
-   ```bash
-   # 在默认端口10000上基本运行
-   uv run app
-
    # 在自定义主机/端口上运行
-   uv run app --host 0.0.0.0 --port 8080
+   python main.py --host 0.0.0.0 --port 8080
    ```
 
 
-4. 在单独的终端中运行测试客户端：
+2. 在单独的终端中运行测试客户端：
 
    ```bash
-   uv run app/test_client.py
+   python a2a_client.py
    ```
 
 
