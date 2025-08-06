@@ -78,7 +78,7 @@ async def main() -> None:
         multiturn_first: dict[str, Any] = {
             'message': {
                 'role': 'user',
-                'parts': [{'kind': 'text', 'text': '请帮我查一下糖尿病的并发症有哪些？'}],
+                'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些？'}],
                 'messageId': uuid4().hex,
             },
         }
