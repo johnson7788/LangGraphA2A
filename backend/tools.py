@@ -74,7 +74,7 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
 
 
 @tool
-def search_guideline_db(query: str, max_results: int = 3) -> Command:
+def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], max_results: int = 3) -> Command:
     """
     模拟搜索指南库：包括推荐内容、content 字段详实说明建议依据与适应症。
     Args:
@@ -123,11 +123,19 @@ def search_guideline_db(query: str, max_results: int = 3) -> Command:
             "timestamp": "2025‑02‑04"
         },
     ]
-    return results[:max_results]
+    search_res = results[:max_results]
+    search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
+    print(f"tool_call_id: {tool_call_id}")
+    return Command(update={
+        "search_dbs": "search_guideline_db",
+        "messages": [
+            ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
+        ]
+    })
 
 
 @tool
-def search_personal_db(query: str, max_results: int = 3) -> Command:
+def search_personal_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], max_results: int = 3) -> Command:
     """
     模拟搜索个人知识库：包括个人整理的详细心得或研究笔记。
     Args:
@@ -170,4 +178,12 @@ def search_personal_db(query: str, max_results: int = 3) -> Command:
             "created": "2025‑05‑20"
         }
     ]
-    return results[:max_results]
+    search_res = results[:max_results]
+    search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
+    print(f"tool_call_id: {tool_call_id}")
+    return Command(update={
+        "search_dbs": "search_personal_db",
+        "messages": [
+            ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
+        ]
+    })
