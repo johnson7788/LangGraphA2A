@@ -123,3 +123,5 @@ include_system=True：保留系统消息（如存在）。
 allow_partial 可选：允许截断部分消息内容
 
 # pre_model_hook 插入一个节点，每次调用 LLM 之前执行这个函数，对消息进行裁剪。
+
+# 工具变化，增多，减少等，Agent必须重新初始化

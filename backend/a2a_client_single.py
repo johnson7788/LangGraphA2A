@@ -62,7 +62,7 @@ async def main() -> None:
                 'role': 'user',
                 'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些？'}],
                 'messageId': uuid4().hex,
-                'metadata': {'tools': ["search_document_db","search_guideline_db"]}
+                'metadata': {'language': "English"}
             },
         }
         # === 流式对话 ===
