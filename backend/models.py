@@ -19,12 +19,21 @@ def create_model():
     if MODEL_PROVIDER == 'google':
         model = ChatGoogleGenerativeAI(model='gemini-2.0-flash')
     elif MODEL_PROVIDER == 'openai':
-        model = ChatOpenAI(
-            model=os.getenv('LLM_MODEL'),
-            openai_api_key=os.getenv('OPENAI_API_KEY'),
-            temperature=0,
-            # openai_proxy="http://127.0.0.1:7890"
-        )
+        HTTP_PROXY = os.getenv("HTTP_PROXY")
+        if HTTP_PROXY:
+            print("ChatOpenAI接口使用代理：" + HTTP_PROXY)
+            model = ChatOpenAI(
+                model=os.getenv('LLM_MODEL'),
+                openai_api_key=os.getenv('OPENAI_API_KEY'),
+                temperature=0,
+                openai_proxy=HTTP_PROXY
+            )
+        else:
+            model = ChatOpenAI(
+                model=os.getenv('LLM_MODEL'),
+                openai_api_key=os.getenv('OPENAI_API_KEY'),
+                temperature=0
+            )
     elif MODEL_PROVIDER == "deepseek":
         model = ChatOpenAI(
             model=os.getenv('LLM_MODEL'),
