@@ -14,7 +14,8 @@ from a2a.types import (
     AgentSkill,
 )
 from dotenv import load_dotenv
-from agent_executor import KnowledgeAgentExecutor  # 引入新的知识库 Agent
+from agent_executor import KnowledgeAgentExecutor
+from agent import KnowledgeAgent
 
 load_dotenv()
 
