@@ -41,7 +41,8 @@ class KnowledgeAgentExecutor(AgentExecutor):
             raise ServerError(error=InvalidParamsError())
 
         query = context.get_user_input()
-        print(f"收到用户的问题: {query}")
+        metadata = context.message.metadata
+        print(f"收到用户的问题: {query}, 传入的metadata信息是: {metadata}")
         print(f"Context ID: {context.context_id}, Task ID: {context.task_id}")
         task = context.current_task
         if not task:
