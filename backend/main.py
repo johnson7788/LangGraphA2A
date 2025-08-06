@@ -14,7 +14,7 @@ from a2a.types import (
     AgentSkill,
 )
 from dotenv import load_dotenv
-from agent import KnowledgeAgent  # 引入新的知识库 Agent
+from agent_executor import KnowledgeAgentExecutor  # 引入新的知识库 Agent
 
 load_dotenv()
 
@@ -50,7 +50,7 @@ def main(host, port):
         # 启动服务
         httpx_client = httpx.AsyncClient()
         request_handler = DefaultRequestHandler(
-            agent_executor=KnowledgeAgent(),
+            agent_executor=KnowledgeAgentExecutor(),
             task_store=InMemoryTaskStore(),
             push_notifier=InMemoryPushNotifier(httpx_client),
         )
