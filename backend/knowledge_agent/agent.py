@@ -73,7 +73,15 @@ class KnowledgeAgent:
             pre_model_hook=pre_model_hook
         )
 
-    async def stream(self, query, context_id) -> AsyncIterable[dict[str, Any]]:
+    async def stream(self, query, history, context_id) -> AsyncIterable[dict[str, Any]]:
+        """
+        调用langgraph 处理用户的请求，并流式的返回
+        Args:
+            query:  str: 问题
+            history: list: 历史记录，可以传入或者不传入，如果context_id相同，也不会对已有的langgraph的MemorySaver影响
+            context_id:
+        Returns:
+        """
         inputs = {'messages': [('user', query)]}
         config = {'configurable': {'thread_id': context_id}}
 

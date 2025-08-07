@@ -59,6 +59,7 @@ class KnowledgeAgentExecutor(AgentExecutor):
 
         query = context.get_user_input()
         metadata = context.message.metadata
+        history = metadata.get("history", [])
         print(f"收到用户的问题: {query}, 传入的metadata信息是: {metadata}")
         print(f"Context ID: {context.context_id}, Task ID: {context.task_id}")
         task = context.current_task
@@ -67,7 +68,7 @@ class KnowledgeAgentExecutor(AgentExecutor):
             await event_queue.enqueue_event(task)
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         try:
-            async for item in self.agent.stream(query, task.contextId):
+            async for item in self.agent.stream(query=query, history=history, context_id=task.contextId):
                 print(f"Agent返回的数据信息: {item}")
                 is_task_complete = item['is_task_complete']
                 require_user_input = item['require_user_input']
