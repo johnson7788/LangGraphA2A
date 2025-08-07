@@ -35,7 +35,10 @@ class MQClientTestCase(unittest.IsolatedAsyncioTestCase):
     """
     def test_publish_message(self):
         # 自定义一些数据格式
-        data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":1, "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}]}
+        # 历史记录
+        data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":1, "messages":  [{'role': 'user', 'content': "我叫Johnson Guo"}, {'role': 'ai', 'content': "很高兴认识你"}, {"role": "user", "content": "你知道我叫什么吗?"}]}
+        # 直接问问题
+        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":1, "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}]}
         json_data = json.dumps(data, ensure_ascii=False)
         nest_json_data = json.dumps(json_data)
         # 建立与RabbitMQ服务器的连接
