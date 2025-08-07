@@ -3,13 +3,13 @@ import time
 from collections.abc import AsyncIterable
 from typing import Any, Literal
 from typing import Annotated, NotRequired
-from langchain_core.messages import AIMessage, ToolMessage
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langgraph.prebuilt import create_react_agent
 from pydantic import BaseModel
 from tools import search_document_db, search_personal_db, search_guideline_db
 from langchain_core.messages.utils import trim_messages, count_tokens_approximately
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 import operator
 from models import create_model
 import dotenv
@@ -82,7 +82,16 @@ class KnowledgeAgent:
             context_id:
         Returns:
         """
-        inputs = {'messages': [('user', query)]}
+        # 塑造历史记录
+        history = [
+            HumanMessage(content=msg['content']) if msg['role'] in ['human','user']
+            else AIMessage(content=msg['content'])
+            for msg in history
+        ]
+        # 添加当前的用户的问题
+        history.append(HumanMessage(content=query))
+        # 创建langgraph的输入
+        inputs = {"messages": history}
         config = {'configurable': {'thread_id': context_id}}
 
         async for item in self.graph.astream(inputs, config, stream_mode='values'):
