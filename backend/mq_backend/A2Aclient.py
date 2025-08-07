@@ -21,6 +21,7 @@ class A2AClientWrapper:
         self.session_id = session_id
         self.agent_url = agent_url
         self.logger = logging.getLogger(__name__)
+        self.agent_card = None
         self.client: A2AClient | None = None
 
     async def _get_agent_card(self, resolver: A2ACardResolver) -> AgentCard:
@@ -54,19 +55,19 @@ class A2AClientWrapper:
             resolver = A2ACardResolver(httpx_client=httpx_client, base_url=self.agent_url)
             try:
                 agent_card = await self._get_agent_card(resolver)
+                self.agent_card = agent_card
             except Exception as e:
                 self.logger.error(f'获取 AgentCard 失败: {e}', exc_info=True)
                 raise RuntimeError('无法获取 agent card，无法继续运行。') from e
-        self.client = A2AClient(httpx_client=httpx_client, agent_card=agent_card)
     async def run(self, user_question: str) -> None:
         """
         执行一次对话流程
         """
-        if self.client is None:
+        if self.agent_card is None:
             await self.setup()
         logging.basicConfig(level=logging.INFO)
         async with httpx.AsyncClient(timeout=60.0) as httpx_client:
-
+            self.client = A2AClient(httpx_client=httpx_client, agent_card=self.agent_card)
             self.logger.info('A2AClient 初始化完成。')
 
             # === 多轮对话 示例 ===
@@ -92,11 +93,9 @@ class A2AClientWrapper:
                 print(chunk.model_dump(mode='json', exclude_none=True))
 
 
-# 入口
 if __name__ == '__main__':
     async def main():
         session_id = time.strftime("%Y%m%d%H%M%S", time.localtime())
         wrapper = A2AClientWrapper(session_id=session_id, agent_url="http://localhost:10000")
-        await wrapper.run("乳腺癌的治疗方案有哪些?")
-
+        await wrapper.run("帕金森的治疗方案有哪些?")
     asyncio.run(main())
