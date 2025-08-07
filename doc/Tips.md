@@ -136,3 +136,86 @@ model = ChatOpenAI(
     temperature=0,
     openai_proxy="http://127.0.0.1:7890"
 )
+
+# LangGraph Agent的响应模式
+invoke表示一次性返回结果
+result_state = agent.invoke({"messages": message})
+
+你要在你给出的 ReACT agent 示例中启用 LangGraph 的 streaming 模式，只需要使用 `stream`（同步）或 `astream`（异步）接口，并指定不同的 `stream_mode`。下面是如何修改你的脚本来实现流式返回的方式：
+
+---
+
+## 🛠 在 ReACT agent 中使用 streaming
+
+下面展示了如何在你的代码基础上使用三种常用的流式模式：
+
+```python
+inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
+```
+
+### ✅ “updates” 模式 — 流式输出每个节点的状态更新
+
+```python
+for chunk in agent.stream(inputs, stream_mode="updates"):
+    print(chunk)
+```
+
+* 每当 ReACT agent 的一个节点（如 LLM 请求、工具调用、最终回答等）执行结束时，返回该节点的更新部分。适合追踪 agent 的执行步骤。([langchain-ai.github.io][1], [博客园][2])
+
+### ✅ “values” 模式 — 流式输出每个节点后的完整状态快照
+
+```python
+for chunk in agent.stream(inputs, stream_mode="values"):
+    print(chunk)
+```
+
+* 每次节点执行完后，返回整个 graph 的完整 state 对象。适合需要全局状态追踪的场景。([DEV Community][3], [CSDN][4])
+
+### ✅ “messages” 模式 — 流式输出 LLM 的 token 级输出
+
+```python
+for token, metadata in agent.stream(inputs, stream_mode="messages"):
+    print(token)
+```
+
+* 逐 token 输出 GPT-4 或其他 LLM 的内容，适合即时显示模型正在“思考”的过程。([LangChain][5], [langchain-ai.github.io][1])
+
+---
+
+## 📌 支持多种模式组合
+
+你也可以同时使用多个模式，例如同时获取节点更新和 token 流输出：
+
+```python
+for mode, data in agent.stream(inputs, stream_mode=["updates", "messages"]):
+    if mode == "messages":
+        token, metadata = data
+        print("token:", token)  # LLM 输出
+    else:  # mode == "updates"
+        print("update:", data)
+```
+
+* 这种方式能同时展示 agent 执行逻辑和内容输出。([CSDN][4], [langchain-ai.github.io][1])
+
+---
+
+## ⚙ 与你代码结合示例
+
+```python
+if __name__ == '__main__':
+    inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
+    for chunk in agent.stream(inputs, stream_mode=["updates", "messages"]):
+        print(chunk)
+```
+
+* 如果你使用异步环境，则使用 `await agent.astream(inputs, stream_mode=...)`。
+
+---
+
+## 📚 总结对比
+
+| 模式         | 输出形式                          | 典型用途               |
+| ---------- | ----------------------------- | ------------------ |
+| `updates`  | 每步节点更新（节点名 + 返回值）             | 查看 agent 执行过程，节省带宽 |
+| `values`   | 每步完整 Graph state 快照           | 审计或调试全局状态          |
+| `messages` | LLM Model 的 token-by-token 输出 | 提升对话交互的实时感         |

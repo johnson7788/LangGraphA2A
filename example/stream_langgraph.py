@@ -5,40 +5,51 @@
 # @Author: johnson
 # @Contact : github: johnson7788
 # @Desc  : 流式的返回数据
+# !/usr/bin/env python
+# -*- coding: utf-8 -*-
+# @Date  : 2025/8/6 10:18
+# @File  : inject_command_tool.py
+# @Author: johnson
+# @Contact : github: johnson7788
+# @Desc  : 流式的返回数据
+
 import dotenv
 import os
-import json
-from typing import Annotated, List, Optional
 from langchain_core.tools import tool
-from langgraph.prebuilt import InjectedState, create_react_agent
-from langgraph.prebuilt.chat_agent_executor import AgentState
-from typing import Annotated
-from langgraph.types import Command
+from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage, AIMessage
-from langchain_core.messages.utils import trim_messages, count_tokens_approximately
+from langchain_core.messages import HumanMessage
+
 dotenv.load_dotenv()
 
-@tool
-def echo(input: str) -> str:
-    """简单反回示例工具"""
-    return f"[TOOL ECHO] {input}"
 
-model = ChatOpenAI(model="gpt-4.1",
-                openai_api_key=os.getenv('OPENAI_API_KEY'),
-                openai_api_base=os.getenv('OPENAI_API_BASE'),
-                temperature=0)
-# Example agent setup
+# 定义一个简单的工具
+@tool
+def web_search(query: str) -> str:
+    """网络搜索"""
+    return f"LangGraph核心技术概念，LangGraph和LangChain同宗同源，底层架构完全相同、接口完全相通。从开发者角度来说，LangGraph也是使用LangChain底层API来接入各类大模型、LangGraph也完全兼容LangChain内置的一系列工具。换而言之，LangGraph的核心功能都是依托LangChain来完成。但是和LangChain的链式工作流哲学完全不同的是，LangGraph的基础哲学是构建图结构的工作流，并引入“状态”这一核心概念来描绘任务执行情况，从而拓展了LangChain LCEL链式语法的功能灵活程度。"
+
+
+# 初始化模型
+model = ChatOpenAI(
+    model="gpt-4.1",
+    openai_api_key=os.getenv('OPENAI_API_KEY'),
+    openai_api_base=os.getenv('OPENAI_API_BASE'),
+    temperature=0
+)
+
+# 构建 Agent
 agent = create_react_agent(
     model=model,
-    tools=[echo]
+    prompt="使用web_search搜索后回答用户的问题",
+    tools=[web_search]
 )
 
 if __name__ == '__main__':
-    message = HumanMessage(content="你好啊，介绍下什么是LangGraph")
-    # 用 agent.invoke，手动传入完整 history
-    result_state = agent.invoke({"messages": message})
-    new_messages = result_state["messages"]  # 包含工具调用、AI 回复等
-    for m in new_messages:
-        print(f"{m.type}: {m.content}")
+    inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
+    print("【流式响应开始】")
+    for token, metadata in agent.stream(inputs, stream_mode="messages"):
+        print(token)
+    print("\n【流式响应结束】")
+
 
