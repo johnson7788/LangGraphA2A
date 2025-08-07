@@ -77,3 +77,19 @@ ERROR:agent_executor:An error occurred while streaming the response: Error code:
 
 # 启动Agent报错
 ERROR:__main__:启动 Agent 服务出错: Missing required key(s) {'structured_response'} in state_schema
+
+# 报错，不同的工具进行Command更新同一个key时报错，需要进行追加，使用operator.add，参考
+[inject_command_update.py](..%2Fexample%2Finject_command_update.py)
+File "/Users/admin/miniforge3/envs/a2a/lib/python3.11/site-packages/langgraph/pregel/__init__.py", line 2433, in stream
+    while loop.tick(input_keys=self.input_channels):
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/miniforge3/envs/a2a/lib/python3.11/site-packages/langgraph/pregel/loop.py", line 493, in tick
+    mv_writes, updated_channels = apply_writes(
+                                  ^^^^^^^^^^^^^
+  File "/Users/admin/miniforge3/envs/a2a/lib/python3.11/site-packages/langgraph/pregel/algo.py", line 305, in apply_writes
+    if channels[chan].update(vals) and get_next_version is not None:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/admin/miniforge3/envs/a2a/lib/python3.11/site-packages/langgraph/channels/last_value.py", line 58, in update
+    raise InvalidUpdateError(msg)
+langgraph.errors.InvalidUpdateError: At key 'search_dbs': Can receive only one value per step. Use an Annotated key to handle multiple values.
+For troubleshooting, visit: https://python.langchain.com/docs/troubleshooting/errors/INVALID_CONCURRENT_GRAPH_UPDATE
