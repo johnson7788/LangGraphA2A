@@ -26,16 +26,9 @@ RABBITMQ_PASSWORD = os.environ["RABBITMQ_PASSWORD"]
 RABBITMQ_VIRTUAL_HOST = os.environ["RABBITMQ_VIRTUAL_HOST"]
 QUEUE_NAME_ANSWER = os.environ["QUEUE_NAME_ANSWER"]
 QUEUE_NAME_QUESTION = os.environ["QUEUE_NAME_QUESTION"]
+AGENT_URL = os.environ["AGENT_URL"]
 
-
-def handle_reasoning_stream_response(link_id, session_id, user_id, function_id, attachment, stream_response):
-    """
-    处理思维链流式响应
-    """
-    pass
-
-
-def handle_gpt_stream_response(link_id, session_id, user_id, function_id, attachment, stream_response):
+def handle_gpt_stream_response(session_id, user_id, function_id, stream_response):
     """
     处理GPT流式响应
     """
@@ -45,24 +38,20 @@ def handle_gpt_stream_response(link_id, session_id, user_id, function_id, attach
     def send_error_message(error_msg):
         """发送错误信息到消息队列"""
         mq_handler.send_message({
-            "linkId": link_id,
             "sessionId": session_id,
             "userId": user_id,
             "functionId": function_id,
             "message": f'发生错误：{error_msg}',
             "reasoningMessage": "",
-            "attachment": attachment,
             "type": 4,
         })
         time.sleep(0.01)
         mq_handler.send_message({
-            "linkId": link_id,
             "sessionId": session_id,
             "userId": user_id,
             "functionId": function_id,
             "message": '[stop]',
             "reasoningMessage": "",
-            "attachment": attachment,
             "type": 4,
         })
 
@@ -77,53 +66,44 @@ def handle_gpt_stream_response(link_id, session_id, user_id, function_id, attach
                     data_type = chunk.get("type")
                     if data_type == "final":
                         answer_queue_message = {
-                            "linkId": link_id,
                             "sessionId": session_id,
                             "userId": user_id,
                             "functionId": function_id,
                             "message": '[stop]',
                             "reasoningMessage": "",
-                            "attachment": attachment,
                             "type": 4,
                         }
                     elif data_type == "reasoning":
                         answer_queue_message = {
-                            "linkId": link_id,
                             "sessionId": session_id,
                             "userId": user_id,
                             "functionId": function_id,
                             "message": '',
                             "reasoningMessage": chunk.get("reasoning", ""),
-                            "attachment": attachment,
                             "type": 4,
                         }
                     elif data_type == "text":
                         answer_queue_message = {
-                            "linkId": link_id,
                             "sessionId": session_id,
                             "userId": user_id,
                             "functionId": function_id,
                             "message": chunk.get("text", ""),
                             "reasoningMessage": '',
-                            "attachment": attachment,
                             "type": 4,
                         }
                     elif data_type == "data":
                         chunk_data = chunk.get("data", {})
                         tools_data = chunk_data.get("data", [])
-                        # display_content = "".join(tool.get("display", "") for tool in tools_data)
                         # 发送给前端的数据，list格式，里面是字典
                         front_data = [tool["front_data"] for tool in tools_data]
                         #工具是调用还是结束了，只需要工具结束了的数据
                         tool_type = chunk_data.get("type")
                         answer_queue_message = {
-                            "linkId": link_id,
                             "sessionId": session_id,
                             "userId": user_id,
                             "functionId": function_id,
                             "message": json.dumps(front_data, ensure_ascii=False),
                             "reasoningMessage": "",
-                            "attachment": attachment,
                             "type": 5,
                         }
                         print(f"[Info] 发送状态数据完成（type 5)：{answer_queue_message}")
@@ -131,13 +111,11 @@ def handle_gpt_stream_response(link_id, session_id, user_id, function_id, attach
                         if tool_type == "tool_result":
                             tool_retrieve_data = [one.get("data",{}) for one in tools_data]
                             answer_reference = {
-                                "linkId": link_id,
                                 "sessionId": session_id,
                                 "userId": user_id,
                                 "functionId": function_id,
                                 "message": json.dumps(tool_retrieve_data, ensure_ascii=False),
                                 "reasoningMessage": "",
-                                "attachment": attachment,
                                 "type": 6,
                             }
                             mq_handler.send_message(answer_reference)
@@ -173,35 +151,19 @@ def handle_rabbit_queue_message(rabbit_message):
     user_id = rabbit_message['userId']
     function_id = rabbit_message['functionId']
     messages = rabbit_message['messages']
-    attachment = rabbit_message['attachment']
-    # 类型：1.文本 2.函数 3.带附件的文本
-    queue_message_type = int(rabbit_message['type'])
-    # 是否要调用function，默认调用，只有明确不掉用时才不调用
-    call_tools = rabbit_message.get('callTools', True)
-    # link_id:如果没有对应的key，默认为None
-    link_id = rabbit_message.get('linkId', None)
+    # attachment = rabbit_message['attachment']
+    # link_id = rabbit_message.get('linkId', None)
 
-    document_id = 0
-
-    # 调用GPT
-    response = None
-    stream_response = None
-    reasoning_stream_response = None
-    stream_response_dify = None
-    if function_id == 6:
+    if function_id == 1:
         # Agent RAG的问答
         agent_session_id = session_id + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         wrapper = A2AClientWrapper(session_id=agent_session_id, agent_url=AGENT_URL)
         stream_response = wrapper.generate(messages)
+        handle_gpt_stream_response(session_id, user_id, function_id, stream_response)
     else:
         print('不在进行处理这条消息，function_id NOT  : ' + str(function_id))
         return
 
-    if stream_response:
-        handle_gpt_stream_response(link_id, session_id, user_id, function_id, attachment, stream_response)
-    elif reasoning_stream_response:
-        handle_reasoning_stream_response(link_id, session_id, user_id, function_id, attachment,
-                                         reasoning_stream_response)
 
 
 def callback(ch, method, properties, body):
