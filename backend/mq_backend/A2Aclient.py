@@ -17,8 +17,9 @@ EXTENDED_AGENT_CARD_PATH = '/agent/authenticatedExtendedCard'
 
 
 class A2AClientWrapper:
-    def __init__(self, session_id: str, agent_url: str):
+    def __init__(self, session_id: str, task_id:str, agent_url: str):
         self.session_id = session_id
+        self.task_id = task_id
         self.agent_url = agent_url
         self.logger = logging.getLogger(__name__)
         self.agent_card = None
@@ -77,7 +78,9 @@ class A2AClientWrapper:
                     'role': 'user',
                     'parts': [{'kind': 'text', 'text': user_question}],
                     'messageId': uuid4().hex,
-                    'metadata': {'language': "English"}
+                    'metadata': {'language': "English"},
+                    'taskId': self.task_id,
+                    'contextId': self.session_id,
                 },
             }
 

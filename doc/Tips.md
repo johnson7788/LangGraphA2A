@@ -270,3 +270,31 @@ Headers({'accept': '*/*', 'accept-encoding': 'gzip, deflate, zstd', 'connection'
 {'id': '93abcc32-62ae-48a6-ab70-8ee16d08912f', 'jsonrpc': '2.0', 'result': {'contextId': '91754423-0369-4d8e-96b3-4cc65a6d0e2a', 'final': True, 'kind': 'status-update', 'status': {'state': 'completed', 'timestamp': '2025-08-07T08:34:34.880328+00:00'}, 'taskId': '5cdc4260-1d21-4a64-ab9c-e43e9de7e74d'}}
 
 ```
+
+# google 的A2A协议的taskId和contextId有啥区别
+## taskId 与 contextId 的区别
+
+* **taskId** 是每一个任务的唯一标识，是由服务器在工作流中生成（通常是 UUID）。它用于跟踪任务的整个执行流程，包括状态更新、消息交换、最终的结果 Artifact 等。换句话说，taskId 对应的是一个明确的「工作单」或「任务实例」。([Google Developer forums][1], [Cohorte][2])
+
+* **contextId** 用于逻辑上将多个相关任务组织到同一个上下文或会话中。它通常也是由服务器生成，用于将一系列相关任务（或子任务）归类到一起，以便在复杂、多步骤或分布式的工作流中保持一致性和语境连续性。([Google][3], [Hugging Face][4])
+
+---
+
+### 比喻一下：
+
+* 将 **taskId** 想象成一份具体的「工作单」号，用来追踪该任务从开始到完成的进度。
+* 而 **contextId** 更像是一条「项目编号」，它可以串联起多个工作单(task)，让它们看起来属于同一个大项目或语境范畴。
+
+---
+
+## 应用场景
+
+* 当你发起一个简单、一次性的请求（例如「帮我查一下今天的天气」），只需要一个 taskId 即可。
+* 但在复杂场景中，例如：「帮我规划一个旅行行程」，这个任务可能会拆成子任务（查机票、查酒店、查景点等），这些子任务可以分别有唯一的 taskId，但通过同一个 contextId 关联起来，让系统知道它们都属于同一旅行计划。([Reddit][5], [Google Developer forums][1])
+
+---
+
+**总结**：
+
+* **taskId**：每次交互的最小单位，唯一且专注于一个任务的执行。
+* **contextId**：用于串联多个 task，形成一个上下文或会话背景，尤为适用于复杂或长流程的任务编排。
