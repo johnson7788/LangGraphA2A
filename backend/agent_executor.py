@@ -125,7 +125,7 @@ def convert_genai_parts_to_a2a(item: dict) -> list[Part]:
     elif data_type == "require_user":
         return [TextPart(text=content)]
     elif data_type == "tool_call":
-        return [DataPart(data=item["data"])]
+        return [DataPart(data={"data": item["data"]})]
     elif data_type == "tool_response":
         return [DataPart(data=item["data"])]
     raise ValueError(f"未知的stream返回的数据类型，请检查stream函数: {data_type}")
