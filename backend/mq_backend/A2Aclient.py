@@ -17,13 +17,14 @@ EXTENDED_AGENT_CARD_PATH = '/agent/authenticatedExtendedCard'
 
 
 class A2AClientWrapper:
-    def __init__(self, session_id: str, task_id:str, agent_url: str):
+    def __init__(self, session_id: str, agent_url: str):
         self.session_id = session_id
-        self.task_id = task_id
         self.agent_url = agent_url
         self.logger = logging.getLogger(__name__)
         self.agent_card = None
         self.client: A2AClient | None = None
+        # 应该根据第一次回答，获取这个task_id并赋值
+        self.task_id = None
 
     async def _get_agent_card(self, resolver: A2ACardResolver) -> AgentCard:
         """
@@ -81,7 +82,6 @@ class A2AClientWrapper:
                     'parts': [{'kind': 'text', 'text': user_question}],
                     'messageId': uuid4().hex,
                     'metadata': {'language': "English", 'history': history},
-                    'taskId': self.task_id,
                     'contextId': self.session_id,
                 },
             }

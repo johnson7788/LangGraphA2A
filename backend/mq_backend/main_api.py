@@ -158,8 +158,7 @@ def handle_rabbit_queue_message(rabbit_message):
 
     if function_id == 1:
         # Agent RAG的问答
-        agent_session_id = session_id + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
-        wrapper = A2AClientWrapper(session_id=agent_session_id, task_id=session_id, agent_url=AGENT_URL)
+        wrapper = A2AClientWrapper(session_id=session_id, agent_url=AGENT_URL)
         stream_response = wrapper.generate(user_question=user_question, history=messages)
         handle_gpt_stream_response(session_id, user_id, function_id, stream_response)
     else:
