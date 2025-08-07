@@ -3,8 +3,10 @@
 
 import os
 import json
+import dotenv
 from datetime import datetime
 import pika
+dotenv.load_dotenv()
 
 RABBITMQ_HOST = os.environ["RABBITMQ_HOST"]
 RABBITMQ_PORT = os.environ["RABBITMQ_PORT"]

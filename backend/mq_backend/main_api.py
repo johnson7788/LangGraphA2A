@@ -8,14 +8,17 @@ import time
 import json
 import asyncio
 import traceback
+import dotenv
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from mq_handler import start_consumer, MQHandler
 from A2Aclient import A2AClientWrapper
+dotenv.load_dotenv()
 
 
 # 创建一个线程池，定义线程池的大小10
 executor = ThreadPoolExecutor(max_workers=20)
+
 RABBITMQ_HOST = os.environ["RABBITMQ_HOST"]
 RABBITMQ_PORT = os.environ["RABBITMQ_PORT"]
 RABBITMQ_USERNAME = os.environ["RABBITMQ_USERNAME"]
