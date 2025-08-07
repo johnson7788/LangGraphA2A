@@ -2,7 +2,7 @@
 a2a_client.py --> main.py(uvicorn) --> agent_executor.py(execute函数) -->agent.py(stream函数)
 
 # A2A 和Langgraph 多轮对话(langgraph控制记忆)
-保持相同的task_id和contextId即可， 相同的contextId传入Langgraph的Memory,Memory根据thread_id判断是否是同一个用户
+用LangGraph的MemorySaver 保持相同的task_id和contextId即可， 相同的contextId传入Langgraph的Memory,Memory根据thread_id判断是否是同一个用户
 [langgraph_memory](..%2Fexample%2Flanggraph_memory)
 
 使用History来控制记忆，代替Agent的Memory
@@ -125,9 +125,10 @@ end_on=("human","tool")：确保以用户或工具消息结束。
 include_system=True：保留系统消息（如存在）。
 allow_partial 可选：允许截断部分消息内容
 
-# pre_model_hook 插入一个节点，每次调用 LLM 之前执行这个函数，对消息进行裁剪。
+# pre_model_hook用法
+插入一个节点，每次调用 LLM 之前执行这个函数，对消息进行裁剪。
 
-# 工具变化，增多，减少等，Agent必须重新初始化
+# 工具变化，增多，减少等，Agent必须重新初始化。
 
 # 配置模型的代理
 model = ChatOpenAI(
