@@ -151,6 +151,8 @@ def handle_rabbit_queue_message(rabbit_message):
     user_id = rabbit_message['userId']
     function_id = rabbit_message['functionId']
     messages = rabbit_message['messages']
+    user_question_dict = messages.pop()
+    user_question = user_question_dict["content"]
     # attachment = rabbit_message['attachment']
     # link_id = rabbit_message.get('linkId', None)
 
@@ -158,7 +160,7 @@ def handle_rabbit_queue_message(rabbit_message):
         # Agent RAG的问答
         agent_session_id = session_id + ''.join(random.choices(string.ascii_uppercase + string.digits, k=5))
         wrapper = A2AClientWrapper(session_id=agent_session_id, task_id=session_id, agent_url=AGENT_URL)
-        stream_response = wrapper.generate(messages)
+        stream_response = wrapper.generate(user_question=user_question, history=messages)
         handle_gpt_stream_response(session_id, user_id, function_id, stream_response)
     else:
         print('不在进行处理这条消息，function_id NOT  : ' + str(function_id))
