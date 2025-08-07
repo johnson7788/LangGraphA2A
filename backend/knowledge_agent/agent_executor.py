@@ -68,6 +68,7 @@ class KnowledgeAgentExecutor(AgentExecutor):
         updater = TaskUpdater(event_queue, task.id, task.contextId)
         try:
             async for item in self.agent.stream(query, task.contextId):
+                print(f"Agent返回的数据信息: {item}")
                 is_task_complete = item['is_task_complete']
                 require_user_input = item['require_user_input']
                 # 自己组织的返回给前端的元数据

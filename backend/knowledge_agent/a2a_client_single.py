@@ -74,6 +74,7 @@ async def main() -> None:
         stream_response = client.send_message_streaming(streaming_request)
 
         async for chunk in stream_response:
+            logger.info(f'收到流式响应')
             print(chunk.model_dump(mode='json', exclude_none=True))
 
 
