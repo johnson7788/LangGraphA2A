@@ -1,4 +1,5 @@
 import os
+import time
 from collections.abc import AsyncIterable
 from typing import Any, Literal
 from typing import Annotated, NotRequired
@@ -78,6 +79,7 @@ class KnowledgeAgent:
 
         for item in self.graph.stream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
+            print(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
             print(f"Agent输出的message信息: {message}")
             current_state = self.graph.get_state(config)
             search_dbs = current_state.values.get("search_dbs")

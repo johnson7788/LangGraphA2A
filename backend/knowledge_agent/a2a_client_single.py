@@ -1,3 +1,4 @@
+import time
 import logging
 from typing import Any
 from uuid import uuid4
@@ -74,7 +75,7 @@ async def main() -> None:
         stream_response = client.send_message_streaming(streaming_request)
 
         async for chunk in stream_response:
-            logger.info(f'收到流式响应')
+            print(time.strftime("%Y/%m/%d %H:%M:%S",time.localtime()))
             print(chunk.model_dump(mode='json', exclude_none=True))
 
 
