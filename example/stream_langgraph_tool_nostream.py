@@ -48,7 +48,19 @@ agent = create_react_agent(
 if __name__ == '__main__':
     inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
     print("【流式响应开始】")
+    gathered_chunks = []
+    current_call = None
     for token, metadata in agent.stream(inputs, stream_mode="messages"):
+        if token.tool_call_chunks:
+            # 存储 chunk，用于后续合并
+            gathered_chunks.append(token)
+            continue  # 不输出工具调用 chunk
+        if token.tool_calls:
+            # 到这里，工具调用已结束，可从 gathered_chunks 聚合
+            # 根据 call 得到参数 name/args/ id
+            print(gathered_chunks)
+            gathered_chunks.clear()
+            continue
         print(token)
         print(metadata)
     print("\n【流式响应结束】")
