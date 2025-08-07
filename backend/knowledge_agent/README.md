@@ -2,6 +2,17 @@
 
 这个示例演示了一个使用[LangGraph](https://langchain-ai.github.io/langgraph/)构建并通过A2A协议暴露的货币转换代理。它展示了支持多轮对话和流式响应的会话交互。
 
+## 文件目录
+* 测试客户端，多个测试
+[a2a_client.py](a2a_client.py)
+
+* 单个的stream测试
+[a2a_client_single.py](a2a_client_single.py)
+
+* 测试传入历史会话
+[a2a_client_history.py](a2a_client_history.py)
+
+
 ## 工作原理
 
 该代理使用LangGraph和LLM（例如Google Gemini）通过ReAct代理模式提供货币兑换信息。A2A协议实现了与代理的标准化交互，允许客户端发送请求并接收实时更新。
