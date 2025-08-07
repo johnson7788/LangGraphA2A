@@ -219,3 +219,29 @@ if __name__ == '__main__':
 | `updates`  | 每步节点更新（节点名 + 返回值）             | 查看 agent 执行过程，节省带宽 |
 | `values`   | 每步完整 Graph state 快照           | 审计或调试全局状态          |
 | `messages` | LLM Model 的 token-by-token 输出 | 提升对话交互的实时感         |
+
+
+# curl作为客户端测试
+curl -N -X POST http://localhost:10000/ \
+  -H "Content-Type: application/json" \
+  -d '{
+    "id": "c1635d3e-7cd5-4965-a615-14ed8fb28842",
+    "jsonrpc": "2.0",
+    "method": "message/stream",
+    "params": {
+      "message": {
+        "kind": "message",
+        "messageId": "f4181ef28c3a421a9284c633d27ccbcf",
+        "metadata": {
+          "language": "English"
+        },
+        "parts": [
+          {
+            "kind": "text",
+            "text": "帕金森的治疗方案有哪些？"
+          }
+        ],
+        "role": "user"
+      }
+    }
+  }'

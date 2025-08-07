@@ -40,9 +40,8 @@ agent = create_react_agent(
 if __name__ == '__main__':
     inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
     print("【流式响应开始】")
-    for token, metadata in agent.stream(inputs, stream_mode="values"):
+    for token in agent.stream(inputs, stream_mode="values"):
         print(token)
-        print(metadata)
     print("\n【流式响应结束】")
 
 
