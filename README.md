@@ -1,7 +1,5 @@
 # 单Agent知识问答
 
-## todo： 待完成
-
 ## 🚀 简介
 
 基于 **LangGraph** 和 **Google A2A 协议** 构建的智能 Agent 系统，支持 React 前端与 Python 后端协同工作。用户可以通过多轮对话与系统交互，系统实时展示“思考过程”、关联实体并查询数据库，同时在回答中附带来源标签并支持流式输出。
@@ -104,8 +102,8 @@ npm run start
 
 
 ## todo:
-tool metadata ✅
-metadata返回 ✅
-LLM Streaming 返回
-LLM Thinking 返回
-改造 https://github.com/google-gemini/gemini-fullstack-langgraph-quickstart  也为A2A形式
+* tool metadata ✅
+* metadata返回 ✅
+* LLM Streaming 返回
+* LLM Thinking 返回
+* 改造 https://github.com/google-gemini/gemini-fullstack-langgraph-quickstart  也为A2A形式
