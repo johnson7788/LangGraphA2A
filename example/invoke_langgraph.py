@@ -4,14 +4,14 @@
 # @File  : inject_command_tool.py
 # @Author: johnson
 # @Contact : github: johnson7788
-# @Desc  : 流式的返回数据
+# @Desc  : invoke, 非流式的，一次等待所有返回
 
 import dotenv
 import os
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 
 dotenv.load_dotenv()
 
@@ -40,32 +40,19 @@ agent = create_react_agent(
 
 if __name__ == '__main__':
     inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
-    print("【流式响应开始】")
+    result_state = agent.invoke(inputs)
+    new_messages = result_state["messages"]  # 包含工具调用、AI 回复等
+    for m in new_messages:
+        if isinstance(m, HumanMessage):
+            print(f"{m.type}: {m.content}")
+        elif isinstance(m, AIMessage):
+            if m.tool_calls:
+                # 工具调用
+                print(f"{m.type}: {m.tool_calls}")
+            else:
+                print(f"{m.type}: {m.content}")
+        elif isinstance(m, ToolMessage):
+            print(f"{m.type}: {m.content}")
 
-    buffer = ""  # 收集普通内容
-    tool_chunks = []  # 收集 tool_call_chunk
-    current_tool_call_id = None
-
-    for token, metadata in agent.stream(inputs, stream_mode="messages"):
-        content = token.content or ""
-        tool_call_chunks = token.additional_kwargs.get("tool_calls", [])
-
-        if tool_call_chunks:
-            # 收集工具调用块
-            tool_chunks.extend(tool_call_chunks)
-            if current_tool_call_id is None and tool_call_chunks[0].get("id"):
-                current_tool_call_id = tool_call_chunks[0]["id"]
-            continue  # 暂不输出
-        elif content:
-            # 输出普通内容（正常的语言内容）
-            print(content, end="", flush=True)
-        elif "finish_reason" in token.response_metadata and token.response_metadata["finish_reason"] == "tool_calls":
-            # 工具调用全部收集完成
-            print("\n[工具调用完成，完整结构如下]")
-            print(f"tool_calls={tool_chunks}")
-            tool_chunks.clear()
-            current_tool_call_id = None
-
-    print("\n【流式响应结束】")
 
 
