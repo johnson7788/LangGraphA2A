@@ -7,7 +7,9 @@
 # @Desc  : 流式的返回数据
 
 import dotenv
+import json
 import os
+from collections import defaultdict
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
@@ -42,29 +44,61 @@ if __name__ == '__main__':
     inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
     print("【流式响应开始】")
 
-    buffer = ""  # 收集普通内容
-    tool_chunks = []  # 收集 tool_call_chunk
-    current_tool_call_id = None
+    buffer = ""  # 收集普通语言内容
+    tool_chunks = []  # 收集 tool_call_chunk 分片
 
     for token, metadata in agent.stream(inputs, stream_mode="messages"):
         content = token.content or ""
         tool_call_chunks = token.additional_kwargs.get("tool_calls", [])
 
         if tool_call_chunks:
-            # 收集工具调用块
+            # 收集工具调用分片
             tool_chunks.extend(tool_call_chunks)
-            if current_tool_call_id is None and tool_call_chunks[0].get("id"):
-                current_tool_call_id = tool_call_chunks[0]["id"]
-            continue  # 暂不输出
+            continue
+
         elif content:
-            # 输出普通内容（正常的语言内容）
-            print(content, end="", flush=True)
+            # 输出普通内容（语言响应）
+            print(content, flush=True)
+
         elif "finish_reason" in token.response_metadata and token.response_metadata["finish_reason"] == "tool_calls":
-            # 工具调用全部收集完成
-            print("\n[工具调用完成，完整结构如下]")
-            print(f"tool_calls={tool_chunks}")
+            # 工具调用流结束，开始合并
+            merged_calls = defaultdict(lambda: {
+                "args": "",
+                "name": None,
+                "type": None,
+                "id": None
+            })
+
+            for chunk in tool_chunks:
+                index = chunk.get("index", 0)
+                merged = merged_calls[index]
+                merged["args"] += chunk.get("function", {}).get("arguments","")
+                merged["name"] = chunk.get("function", {}).get("name","") or merged["name"]
+                merged["type"] = chunk.get("type") or merged["type"]
+                merged["id"] = chunk.get("id") or merged["id"]
+
+            # 构建最终 tool_calls 列表
+            final_tool_calls = []
+            for idx in sorted(merged_calls.keys()):
+                info = merged_calls[idx]
+                try:
+                    arguments_obj = json.loads(info["args"])
+                except json.JSONDecodeError:
+                    arguments_obj = info["args"]  # 保留原始字符串以便调试
+
+                call = {
+                    "index": idx,
+                    "id": info["id"],
+                    "type": info["type"],
+                    "function": {
+                        "name": info["name"],
+                        "arguments": arguments_obj
+                    }
+                }
+                final_tool_calls.append(call)
+
+            print(f"\ntool_calls={final_tool_calls}\n")
             tool_chunks.clear()
-            current_tool_call_id = None
 
     print("\n【流式响应结束】")
 
