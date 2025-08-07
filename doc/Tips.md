@@ -8,6 +8,9 @@ a2a_client.py --> main.py(uvicorn) --> agent_executor.py(execute函数) -->agent
 使用History来控制记忆，代替Agent的Memory
 [history_langgraph.py](..%2Fexample%2Fhistory_langgraph.py)
 
+# A2A中如何和Langgraph的Agent传入hisotory
+A2A 协议并没有针对“history 历史聊天记录”做专门定义或格式，我们在metadata中添加1个history字段，来进行历史记录的处理，然后交个langgraph记录到记忆中
+
 # tool Context vs tool State
 google的 adk是tool context，tool可以读取和更改state中的信息
 https://google.github.io/adk-docs/context/#the-different-types-of-context

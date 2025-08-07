@@ -62,9 +62,9 @@ async def main() -> None:
         multiturn_first: dict[str, Any] = {
             'message': {
                 'role': 'user',
-                'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些？'}],
+                'parts': [{'kind': 'text', 'text': '你知道我叫什么名字吗？'}],
                 'messageId': uuid4().hex,
-                'metadata': {'language': "English"}
+                'metadata': {'language': "English", 'history': [{'role': 'human', 'content': "我叫Johnson Guo"}, {'role': 'ai', 'content': "很高兴认识你"}]},
             },
         }
         # === 流式对话 ===
