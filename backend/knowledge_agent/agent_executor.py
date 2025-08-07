@@ -75,6 +75,7 @@ class KnowledgeAgentExecutor(AgentExecutor):
                 metadata = item['metadata']
 
                 if not is_task_complete and not require_user_input:
+                    print(f"update_status收到信息，更新给client端")
                     await updater.update_status(
                         TaskState.working,
                         updater.new_agent_message(
@@ -83,6 +84,7 @@ class KnowledgeAgentExecutor(AgentExecutor):
                         ),
                     )
                 elif require_user_input:
+                    print(f"update_status收到需要用户输入，更新给client端")
                     await updater.update_status(
                         TaskState.input_required,
                         new_agent_text_message(
@@ -94,6 +96,7 @@ class KnowledgeAgentExecutor(AgentExecutor):
                     )
                     break
                 else:
+                    print(f"add_artifact完成最后更新，更新给client端")
                     await updater.add_artifact(
                         [Part(root=TextPart(text=item['content']))],
                         name='conversion_result',
