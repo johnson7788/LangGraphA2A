@@ -22,7 +22,7 @@ def pre_model_hook(state: AgentState):
         state["messages"],
         strategy="last",
         token_counter=count_tokens_approximately,
-        max_tokens=2048,
+        max_tokens=4096,
         start_on="human",
         end_on=("human", "tool")
     )
