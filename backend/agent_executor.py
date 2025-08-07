@@ -76,9 +76,10 @@ class KnowledgeAgentExecutor(AgentExecutor):
                 if not is_task_complete and not require_user_input:
                     await updater.update_status(
                         TaskState.working,
-                        updater.new_agent_message(
-                            parts = item['content'],
-                            metadata = metadata
+                        new_agent_text_message(
+                            item['content'],
+                            task.contextId,
+                            task.id,
                         ),
                     )
                 elif require_user_input:

@@ -98,8 +98,10 @@ class KnowledgeAgent:
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': '正在处理检索结果…',
+                    'content': '正在使用tool的检索结果…',
                     'metadata': metadata,
+                    'data': {"name": message.name, "tool_call_id": message.tool_call_id, "content": message.content},
+                    'data_type': 'tool_response'
                 }
 
         yield self.get_agent_response(config, metadata)
@@ -115,21 +117,24 @@ class KnowledgeAgent:
                     'is_task_complete': False,
                     'require_user_input': True,
                     'content': structured_response.message,
-                    'metadata': metadata
+                    'metadata': metadata,
+                    'data_type': 'require_user'
                 }
             if structured_response.status == 'completed':
                 return {
                     'is_task_complete': True,
                     'require_user_input': False,
                     'content': structured_response.message,
-                    'metadata': metadata
+                    'metadata': metadata,
+                    'data_type': 'result'
                 }
 
         return {
             'is_task_complete': False,
             'require_user_input': True,
             'content': '暂时无法处理您的请求，请稍后再试。',
-            'metadata': metadata
+            'metadata': metadata,
+            'data_type': 'error'
         }
 
     SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
