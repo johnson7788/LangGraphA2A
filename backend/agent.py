@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from tools import search_document_db, search_personal_db, search_guideline_db
 from langchain_core.messages.utils import trim_messages, count_tokens_approximately
 from langgraph.checkpoint.memory import MemorySaver
+import operator
 from models import create_model
 import dotenv
 dotenv.load_dotenv()
@@ -36,7 +37,8 @@ class ResponseFormat(BaseModel):
 class CustomState(AgentState):
     # The user_name field in short-term state
     structured_response: NotRequired[ResponseFormat]
-    search_dbs: NotRequired[str]
+    # 搜索的数据库的metadata信息的存储
+    search_dbs: Annotated[list[dict], operator.add]
 
 class KnowledgeAgent:
     """知识库问答 Agent"""
