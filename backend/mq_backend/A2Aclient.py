@@ -95,8 +95,10 @@ class A2AClientWrapper:
             stream_response = self.client.send_message_streaming(streaming_request)
 
             async for chunk in stream_response:
-                self.logger.info("=== 流式响应:  ===")
-                print(chunk.model_dump(mode='json', exclude_none=True))
+                self.logger.info(f"输出的chunk内容: {chunk}")
+                chunk_data = chunk.model_dump(mode='json', exclude_none=True)
+                print(chunk_data)
+                yield chunk_data
 
 if __name__ == '__main__':
     async def main():
