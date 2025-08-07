@@ -54,6 +54,7 @@ async def main() -> None:
             raise RuntimeError('无法获取 agent card，无法继续运行。') from e
 
         client = A2AClient(httpx_client=httpx_client, agent_card=final_agent_card_to_use)
+        print(client.httpx_client.headers)
         logger.info('A2AClient 初始化完成。')
 
         # === 多轮对话 ===
