@@ -52,7 +52,6 @@ def main(host, port):
         request_handler = DefaultRequestHandler(
             agent_executor=KnowledgeAgentExecutor(),
             task_store=InMemoryTaskStore(),
-            # push_notifier=InMemoryPushNotifier(httpx_client),
         )
         server = A2AStarletteApplication(
             agent_card=agent_card,

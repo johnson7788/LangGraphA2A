@@ -7,6 +7,9 @@
 [stream_langgraph.py](stream_langgraph.py)
 [stream_langgraph.md](stream_langgraph.md)
 
+## values模式
+[stream_values_langgraph.py](stream_values_langgraph.py)
+
 ## 工具非流式输出，其它流式输出
 [stream_langgraph_tool_nostream.py](stream_langgraph_tool_nostream.py)
 [stream_langgraph_tool_nostream.md](stream_langgraph_tool_nostream.md)
