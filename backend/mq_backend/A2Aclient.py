@@ -93,7 +93,6 @@ class A2AClientWrapper:
                 self.logger.info("=== 流式响应:  ===")
                 print(chunk.model_dump(mode='json', exclude_none=True))
 
-
 if __name__ == '__main__':
     async def main():
         session_id = time.strftime("%Y%m%d%H%M%S", time.localtime())
