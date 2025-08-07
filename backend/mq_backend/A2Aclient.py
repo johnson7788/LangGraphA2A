@@ -60,7 +60,7 @@ class A2AClientWrapper:
             except Exception as e:
                 self.logger.error(f'获取 AgentCard 失败: {e}', exc_info=True)
                 raise RuntimeError('无法获取 agent card，无法继续运行。') from e
-    async def run(self, user_question: str) -> None:
+    async def generate(self, user_question: str) -> None:
         """
         执行一次对话流程
         """
@@ -100,5 +100,5 @@ if __name__ == '__main__':
     async def main():
         session_id = time.strftime("%Y%m%d%H%M%S", time.localtime())
         wrapper = A2AClientWrapper(session_id=session_id, agent_url="http://localhost:10000")
-        await wrapper.run("帕金森的治疗方案有哪些?")
+        await wrapper.generate("帕金森的治疗方案有哪些?")
     asyncio.run(main())
