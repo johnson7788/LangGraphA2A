@@ -1,166 +1,102 @@
-import random
+import logging
 import time
-import json
 import asyncio
-import urllib
+from typing import Any
 from uuid import uuid4
-from A2AServer.common.client import A2AClient, A2ACardResolver
-from A2AServer.common.A2Atypes import TaskState,TextPart,TaskArtifactUpdateEvent,TaskStatusUpdateEvent
-# from common.types import Task, TextPart, FilePart, FileContent # 如有需要可以加上
-from typing import AsyncIterator
+
+import httpx
+from a2a.client import A2ACardResolver, A2AClient
+from a2a.types import (
+    AgentCard,
+    MessageSendParams,
+    SendStreamingMessageRequest,
+)
+
+PUBLIC_AGENT_CARD_PATH = '/.well-known/agent.json'
+EXTENDED_AGENT_CARD_PATH = '/agent/authenticatedExtendedCard'
 
 
 class A2AClientWrapper:
-    def __init__(self,
-                 session_id,
-                 agent_url="http://localhost:10006",
-                 push_notification_receiver="http://localhost:5000",
-                 use_push_notifications=False,
-                 use_history=False):
-        self.agent_url = agent_url
-        self.use_push_notifications = use_push_notifications
-        self.use_history = use_history
-        self.push_notification_receiver = push_notification_receiver
+    def __init__(self, session_id: str, agent_url: str):
         self.session_id = session_id
-        self.client = None
-        self.streaming = False
-        self.notification_receiver_host = None
-        self.notification_receiver_port = None
+        self.agent_url = agent_url
+        self.logger = logging.getLogger(__name__)
+        self.client: A2AClient | None = None
 
-    async def setup(self):
-        resolver = A2ACardResolver(self.agent_url)
-        card = resolver.get_agent_card()
-        print("======= Agent Card ========")
-        print(card.model_dump_json(exclude_none=True))
-        self.client = A2AClient(agent_card=card)
-        self.streaming = card.capabilities.streaming
+    async def _get_agent_card(self, resolver: A2ACardResolver) -> AgentCard:
+        """
+        获取 AgentCard（支持扩展卡优先，否则用 public 卡）
+        """
+        self.logger.info(f'尝试获取 Agent Card: {self.agent_url}{PUBLIC_AGENT_CARD_PATH}')
+        public_card = await resolver.get_agent_card()
+        self.logger.info('成功获取 public agent card:')
+        self.logger.info(public_card.model_dump_json(indent=2, exclude_none=True))
 
-        notif_receiver_parsed = urllib.parse.urlparse(self.push_notification_receiver)
-        self.notification_receiver_host = notif_receiver_parsed.hostname
-        self.notification_receiver_port = notif_receiver_parsed.port
+        if public_card.supportsAuthenticatedExtendedCard:
+            try:
+                self.logger.info('支持扩展认证卡，尝试获取...')
+                auth_headers_dict = {'Authorization': 'Bearer dummy-token-for-extended-card'}
+                extended_card = await resolver.get_agent_card(
+                    relative_card_path=EXTENDED_AGENT_CARD_PATH,
+                    http_kwargs={'headers': auth_headers_dict},
+                )
+                self.logger.info('成功获取扩展认证 agent card:')
+                self.logger.info(extended_card.model_dump_json(indent=2, exclude_none=True))
+                return extended_card
+            except Exception as e:
+                self.logger.warning(f'获取扩展卡失败: {e}', exc_info=True)
 
-    async def run(self, prompt: str):
+        self.logger.info('使用 public agent card。')
+        return public_card
+
+    async def setup(self) -> None:
+        async with httpx.AsyncClient(timeout=60.0) as httpx_client:
+            resolver = A2ACardResolver(httpx_client=httpx_client, base_url=self.agent_url)
+            try:
+                agent_card = await self._get_agent_card(resolver)
+            except Exception as e:
+                self.logger.error(f'获取 AgentCard 失败: {e}', exc_info=True)
+                raise RuntimeError('无法获取 agent card，无法继续运行。') from e
+        self.client = A2AClient(httpx_client=httpx_client, agent_card=agent_card)
+    async def run(self, user_question: str) -> None:
+        """
+        执行一次对话流程
+        """
         if self.client is None:
             await self.setup()
+        logging.basicConfig(level=logging.INFO)
+        async with httpx.AsyncClient(timeout=60.0) as httpx_client:
 
-        task_id = uuid4().hex
-        print("=========  starting a new task ======== ")
-        stream_response = self.generate(messages=[{"role": "user", "content": prompt}])
-        async for result in stream_response:
-            print(f"stream event => {result}")
+            self.logger.info('A2AClient 初始化完成。')
 
-
-
-    async def generate(self, messages: list[dict]) -> AsyncIterator[dict]:
-        """SSE 流式生成器"""
-        if self.client is None:
-            await self.setup()
-        task_id = uuid4().hex
-        prompt = messages[-1]["content"]
-        print(f"发送的问题是: {prompt}")
-        message = {
-            "role": "user",
-            "parts": [
-                {
-                    "type": "text",
-                    "text": prompt,
-                }
-            ]
-        }
-        payload = {
-            "id": task_id,
-            "sessionId": self.session_id,
-            "acceptedOutputModes": ["text"],
-            "message": message,
-        }
-
-        # 如果支持streaming，就一边收，一边yield
-        response_stream = self.client.send_task_streaming_with_retry(payload)
-        async for result in response_stream:
-            print(f"收到的结果信息是: {result}")
-            if result and result.result:
-                if isinstance(result.result, TaskStatusUpdateEvent):
-                    # print(f"收到状态更新TaskStatusUpdateEvent",result.result)
-                    if result.result and result.result.status.message and result.result.status.message.parts:
-                        type = result.result.status.message.parts[0].type
-                        if type == "text":
-                            text = result.result.status.message.parts[0].text
-                            # print(f"TaskStatusUpdateEvent,Text内容: {text}")
-                            if not text:
-                                # 去掉空的思考
-                                continue
-                            yield {
-                                "type": "reasoning", "reasoning": text
-                            }
-                        elif type == "data":
-                            data = result.result.status.message.parts[0].data
-                            # print(f"TaskStatusUpdateEvent,data内容: {data}")
-                            yield {
-                                "type": "data", "data": data
-                            }
-                        else:
-                            print(f"收到的数据类型未知: {type}")
-                elif isinstance(result.result, TaskArtifactUpdateEvent):
-                    for part in result.result.artifact.parts:
-                        if isinstance(part, TextPart) and part.text:
-                            # print(f"TaskArtifactUpdateEvent,Text内容: {part.text}")
-                            yield {
-                                "type": "text", "text": part.text,
-                            }
-            else:
-                print(f"收到了其它消息内容，{result}")
-        print(f"任务结束，返回flag为done的信息。")
-        yield {
-            "type": "final", "text": "[DONE]",
-        }
-
-    async def _complete_task(self, prompt: str, task_id: str):
-        message = {
-            "role": "user",
-            "parts": [
-                {
-                    "type": "text",
-                    "text": prompt,
-                }
-            ]
-        }
-
-        payload = {
-            "id": task_id,
-            "sessionId": self.session_id,
-            "acceptedOutputModes": ["text"],
-            "message": message,
-        }
-
-        if self.use_push_notifications:
-            payload["pushNotification"] = {
-                "url": f"http://{self.notification_receiver_host}:{self.notification_receiver_port}/notify",
-                "authentication": {
-                    "schemes": ["bearer"],
+            # === 多轮对话 示例 ===
+            self.logger.info("开始进行对话...")
+            message_data: dict[str, Any] = {
+                'message': {
+                    'role': 'user',
+                    'parts': [{'kind': 'text', 'text': user_question}],
+                    'messageId': uuid4().hex,
+                    'metadata': {'language': "English"}
                 },
             }
 
-        if self.streaming:
-            response_stream = self.client.send_task_streaming_with_retry(payload)
-            async for result in response_stream:
-                print(f"stream event => {result.model_dump_json(exclude_none=True)}")
-            task_result = await self.client.get_task({"id": task_id})
-        else:
-            task_result = await self.client.send_task(payload)
-            print(f"\n{task_result.model_dump_json(exclude_none=True)}")
+            # === 流式响应 ===
+            print("=== 流式响应开始 ===")
+            streaming_request = SendStreamingMessageRequest(
+                id=str(uuid4()),
+                params=MessageSendParams(**message_data)
+            )
+            stream_response = self.client.send_message_streaming(streaming_request)
 
-        state = TaskState(task_result.result.status.state)
-        if state.name == TaskState.INPUT_REQUIRED.name:
-            # 递归重新调用直到任务完成
-            return await self._complete_task(prompt, task_id)
-        else:
-            return True
+            async for chunk in stream_response:
+                print(chunk.model_dump(mode='json', exclude_none=True))
 
 
-# 作为脚本运行时调用
-if __name__ == "__main__":
+# 入口
+if __name__ == '__main__':
     async def main():
-        session_id = time.strftime("%Y%m%d%H%M%S",time.localtime())
-        wrapper = A2AClientWrapper(session_id=session_id, agent_url="http://localhost:10006")
+        session_id = time.strftime("%Y%m%d%H%M%S", time.localtime())
+        wrapper = A2AClientWrapper(session_id=session_id, agent_url="http://localhost:10000")
         await wrapper.run("乳腺癌的治疗方案有哪些?")
+
     asyncio.run(main())

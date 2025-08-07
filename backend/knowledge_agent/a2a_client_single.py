@@ -1,9 +1,9 @@
 import logging
 from typing import Any
 from uuid import uuid4
-import time
+
 import httpx
-import asyncio
+
 from a2a.client import A2ACardResolver, A2AClient
 from a2a.types import (
     AgentCard,
@@ -78,8 +78,5 @@ async def main() -> None:
 
 
 if __name__ == '__main__':
-    async def main():
-        session_id = time.strftime("%Y%m%d%H%M%S",time.localtime())
-        wrapper = A2AClientWrapper(session_id=session_id, agent_url="http://localhost:10000")
-        await wrapper.run("乳腺癌的治疗方案有哪些?")
+    import asyncio
     asyncio.run(main())
