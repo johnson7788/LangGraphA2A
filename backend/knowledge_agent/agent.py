@@ -77,7 +77,7 @@ class KnowledgeAgent:
         inputs = {'messages': [('user', query)]}
         config = {'configurable': {'thread_id': context_id}}
 
-        for item in self.graph.stream(inputs, config, stream_mode='values'):
+        async for item in self.graph.astream(inputs, config, stream_mode='values'):
             message = item['messages'][-1]
             print(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
             print(f"Agent输出的message信息: {message}")

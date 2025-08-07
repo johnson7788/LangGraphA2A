@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 def main(host, port):
     """启动知识库问答 Agent 服务。"""
     try:
-        capabilities = AgentCapabilities(streaming=True, pushNotifications=True)
+        capabilities = AgentCapabilities(streaming=True)
         skill = AgentSkill(
             id='knowledge_search',
             name='知识库问答能力',

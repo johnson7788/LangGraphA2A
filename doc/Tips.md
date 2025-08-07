@@ -245,3 +245,6 @@ curl -N -X POST http://localhost:10000/ \
       }
     }
   }'
+
+# 流式输出，这里也需要改成流式的
+async for item in self.graph.astream(inputs, config, stream_mode='values'):
