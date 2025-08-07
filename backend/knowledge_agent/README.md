@@ -59,8 +59,9 @@ sequenceDiagram
 1. 运行代理：
 
    ```bash
-   # 在自定义主机/端口上运行
-   python main.py --host 0.0.0.0 --port 8080
+   cp env_template .env
+   # 修改.env中要使用的模型
+   python main.py --host 0.0.0.0 --port 10000
    ```
 
 
@@ -75,10 +76,10 @@ sequenceDiagram
 
 代理也可以使用容器文件构建。
 
-1. 导航到`samples/python/agents/langgraph`目录：
+1. 导航到`backend/knowledge_agent`目录：
 
   ```bash
-  cd samples/python/agents/langgraph
+  cd backend/knowledge_agent
   ```
 
 
