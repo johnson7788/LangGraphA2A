@@ -81,24 +81,31 @@ class KnowledgeAgent:
             print(f"Agent输出的message信息: {message}")
             current_state = self.graph.get_state(config)
             search_dbs = current_state.values.get("search_dbs")
+            # 作为metadata发送给前端
+            metadata = {"search_dbs": search_dbs}
             print(f"search_dbs: {search_dbs}")
             print(f"current_state.metadata: {current_state.metadata}")
             if isinstance(message, AIMessage) and message.tool_calls and len(message.tool_calls) > 0:
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': '正在检索相关知识…'
+                    'content': '正在使用tool检索相关知识…',
+                    'metadata': metadata,
+                    'data': message.tool_calls,
+                    'data_type': 'tool_call'
                 }
             elif isinstance(message, ToolMessage):
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
-                    'content': '正在处理检索结果…'
+                    'content': '正在处理检索结果…',
+                    'metadata': metadata,
                 }
 
-        yield self.get_agent_response(config)
+        yield self.get_agent_response(config, metadata)
 
-    def get_agent_response(self, config):
+    def get_agent_response(self, config, metadata):
+        # 自己组装的metadata信息，用于返回给前端
         current_state = self.graph.get_state(config)
         structured_response = current_state.values.get('structured_response')
         print(f"Agent输出:structured_response.message: {structured_response.message}")
@@ -107,21 +114,22 @@ class KnowledgeAgent:
                 return {
                     'is_task_complete': False,
                     'require_user_input': True,
-                    'content': structured_response.message
+                    'content': structured_response.message,
+                    'metadata': metadata
                 }
             if structured_response.status == 'completed':
                 return {
                     'is_task_complete': True,
                     'require_user_input': False,
-                    'content': structured_response.message
+                    'content': structured_response.message,
+                    'metadata': metadata
                 }
 
         return {
             'is_task_complete': False,
             'require_user_input': True,
-            'content': (
-                '暂时无法处理您的请求，请稍后再试。'
-            )
+            'content': '暂时无法处理您的请求，请稍后再试。',
+            'metadata': metadata
         }
 
     SUPPORTED_CONTENT_TYPES = ['text', 'text/plain']
