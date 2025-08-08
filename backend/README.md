@@ -6,3 +6,6 @@
 
 ## Rabbit MQ后端
 [mq_backend](mq_backend)
+
+## 和前端进行交互(使用fastapi撰写)
+[api_gateway](api_gateway)
