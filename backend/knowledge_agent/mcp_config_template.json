@@ -6,22 +6,22 @@
       "env": {
         "ENV_VAR": "value"
       },
-      "mode": "stdio",
+      "transport": "stdio",
       "description": "可选，对服务器的说明",
       "disabled": false,
       "alwaysAllow": []
-    }
-  },
-  "RAGTool": {
+    },
+    "RAGTool": {
       "url": "http://127.0.0.1:7002/sse",
-      "mode": "sse",
+      "transport": "sse",
       "description": "可选，对服务器的说明",
       "disabled": false
   },
-  "WebSearch": {
+    "WebSearch": {
       "url": "http://127.0.0.1:7003/mcp",
-      "mode": "streamable-http",
+      "transport": "streamable_http",
       "description": "可选，对服务器的说明",
       "disabled": false
+  }
   }
 }

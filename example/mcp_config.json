@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "SearchTool": {
+      "url": "http://localhost:9000/mcp",
+      "transport": "streamable_http",
+      "description": "搜索工具",
+      "disabled": false
+    }
+  }
+}

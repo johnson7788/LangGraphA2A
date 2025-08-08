@@ -34,3 +34,6 @@
 
 ## langgraph使用mcp
 [mcp_langgraph.py](mcp_langgraph.py)
+
+## 加载本地的mcp_config.json
+[mcp_load_config_langgraph.py](mcp_load_config_langgraph.py)
