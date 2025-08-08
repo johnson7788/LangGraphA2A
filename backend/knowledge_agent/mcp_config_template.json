@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "server-name": {
+      "command": "可执行命令，例如 node、npx、python 等",
+      "args": ["参数1", "参数2"],
+      "env": {
+        "ENV_VAR": "value"
+      },
+      "mode": "stdio",
+      "description": "可选，对服务器的说明",
+      "disabled": false,
+      "alwaysAllow": []
+    }
+  },
+  "RAGTool": {
+      "url": "http://127.0.0.1:7002/sse",
+      "mode": "sse",
+      "description": "可选，对服务器的说明",
+      "disabled": false
+  },
+  "WebSearch": {
+      "url": "http://127.0.0.1:7003/mcp",
+      "mode": "streamable-http",
+      "description": "可选，对服务器的说明",
+      "disabled": false
+  }
+}
