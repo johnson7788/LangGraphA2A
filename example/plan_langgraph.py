@@ -33,10 +33,11 @@ PLAN_STORAGE = collections.defaultdict(dict)
 @tool
 def plan_tool(action: str, config: RunnableConfig, payload: list[dict] = []) -> str:
     """
-    Plan 工具支持以下操作：， create和update是，需要提供payload。 get和list则不需要。
+    Plan制作计划，当传入action为create和update必须提供payload参数。 get和list则不需要提供payload参数。
     - action: 'create', 'update', 'get', 'list'
     - payload: list[dict]，例如 [{"step1":"查询xxx"}, {"step2": "然后xxx"}]
     """
+    print(f"plan_tool调用: 操作是：{action}, Payload是：{payload}")
     metadata = config.get("metadata", {})
     thread_id = metadata.get("thread_id")
     if not thread_id:

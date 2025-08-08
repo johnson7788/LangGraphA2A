@@ -25,3 +25,6 @@
 
 ## 模拟搜索
 [search.py](search.py)
+
+## 使用
+[plan_langgraph.py](plan_langgraph.py)
