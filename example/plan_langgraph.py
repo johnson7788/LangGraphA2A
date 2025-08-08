@@ -85,7 +85,6 @@ def plan_tool(action: str, config: RunnableConfig, payload: list[dict] = []) -> 
         return f"未知的 action: {action}，支持：create/update/get/list。"
 
 
-
 @tool
 def web_search(query: str) -> str:
     """网络搜索"""
