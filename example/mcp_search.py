@@ -25,6 +25,7 @@ def search_document_db(query: str, max_results: int = 3):
     Returns:
         list: 包含文献信息的字典列表，每个字典包含title, snippet, content, source, timestamp字段
     """
+    print(f"search_document_db, {query}")
     results = [
         {
             "title": "CuATSM 恢复 SOD1 功能：小鼠病症逆转研究",
@@ -73,6 +74,7 @@ def search_guideline_db(query: str, max_results: int = 3):
     Returns:
         list: 包含指南信息的字典列表，每个字典包含title, snippet, content, source, timestamp字段
     """
+    print(f"search_guideline_db, {query}")
     results = [
         {
             "title": "MDS 2025：治疗运动波动的循证综述",
