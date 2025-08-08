@@ -11,9 +11,9 @@ from sse_starlette.sse import EventSourceResponse
 from pika.exceptions import AMQPConnectionError
 import logging
 from dotenv import load_dotenv
-
 # Load environment variables from .env file
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
+load_dotenv(dotenv_path=dotenv_path)
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -25,11 +25,13 @@ app = FastAPI()
 # RabbitMQ Configuration from environment variables
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", 5672))
-RABBITMQ_USERNAME = os.getenv("RABBITMQ_USERNAME", "guest")
-RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "guest")
+RABBITMQ_USERNAME = os.getenv("RABBITMQ_USERNAME", "admin")
+RABBITMQ_PASSWORD = os.getenv("RABBITMQ_PASSWORD", "welcome")
 RABBITMQ_VIRTUAL_HOST = os.getenv("RABBITMQ_VIRTUAL_HOST", "/")
-QUEUE_NAME_QUESTION = os.getenv("QUEUE_NAME_QUESTION", "question_queue")
-QUEUE_NAME_ANSWER = os.getenv("QUEUE_NAME_ANSWER", "answer_queue")
+# 从哪个队列中读取数据,写入到问题，从答案读取
+QUEUE_NAME_WRITER = os.getenv("QUEUE_NAME_WRITER", "question_queue")
+QUEUE_NAME_READ = os.getenv("QUEUE_NAME_READ", "answer_queue")
+logger.info(f"Connecting to RabbitMQ at {RABBITMQ_HOST}:{RABBITMQ_PORT}, user: {RABBITMQ_USERNAME}")
 
 # Thread-safe dictionary to store SSE queues for each session
 sse_queues = {}
@@ -56,11 +58,11 @@ def listen_to_answer_queue():
         try:
             connection = get_rabbitmq_connection()
             channel = connection.channel()
-            channel.queue_declare(queue=QUEUE_NAME_ANSWER, durable=True)
+            channel.queue_declare(queue=QUEUE_NAME_READ, durable=True)
             
-            logger.info(f"Started listening to {QUEUE_NAME_ANSWER}")
+            logger.info(f"Started listening to {QUEUE_NAME_READ}")
 
-            for method_frame, properties, body in channel.consume(QUEUE_NAME_ANSWER):
+            for method_frame, properties, body in channel.consume(QUEUE_NAME_READ):
                 try:
                     message = json.loads(body.decode('utf-8'))
                     session_id = message.get("sessionId")
@@ -85,17 +87,17 @@ def publish_to_question_queue(session_id: str, final_body: str):
     try:
         connection = get_rabbitmq_connection()
         channel = connection.channel()
-        channel.queue_declare(queue=QUEUE_NAME_QUESTION, durable=True)
+        channel.queue_declare(queue=QUEUE_NAME_WRITER, durable=True)
         channel.basic_publish(
             exchange='',
-            routing_key=QUEUE_NAME_QUESTION,
+            routing_key=QUEUE_NAME_WRITER,
             body=final_body,
             properties=pika.BasicProperties(
                 delivery_mode=2,  # make message persistent
             )
         )
         connection.close()
-        logger.info(f"Sent message to {QUEUE_NAME_QUESTION} for session {session_id}")
+        logger.info(f"Sent message to {QUEUE_NAME_WRITER} for session {session_id}")
     except AMQPConnectionError as e:
         # Re-raise to be caught in the endpoint
         raise e
