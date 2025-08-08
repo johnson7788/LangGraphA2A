@@ -33,7 +33,7 @@ PLAN_STORAGE = collections.defaultdict(dict)
 @tool
 def plan_tool(action: str, config: RunnableConfig, payload: list[dict] = []) -> str:
     """
-    Plan 工具支持以下操作：
+    Plan 工具支持以下操作：， create和update是，需要提供payload。 get和list则不需要。
     - action: 'create', 'update', 'get', 'list'
     - payload: list[dict]，例如 [{"step1":"查询xxx"}, {"step2": "然后xxx"}]
     """
