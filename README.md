@@ -104,6 +104,8 @@ npm run start
 ## todo:
 * tool metadata ✅
 * metadata返回 ✅
-* LLM Streaming 返回
+* Step Streaming 返回，LLM的每一个步骤返回给client ✅
+* MCP 外挂集成
+* LLM Token Streaming 返回
 * LLM Thinking 返回
 * 改造 https://github.com/google-gemini/gemini-fullstack-langgraph-quickstart  也为A2A形式
