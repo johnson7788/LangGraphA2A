@@ -1,4 +1,3 @@
-
 import time
 import asyncio
 import json
@@ -7,6 +6,7 @@ import pika
 import threading
 from uuid import uuid4
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from sse_starlette.sse import EventSourceResponse
 from pika.exceptions import AMQPConnectionError
 import logging
@@ -80,6 +80,26 @@ def listen_to_answer_queue():
             # Avoid busy-looping on unexpected errors
             time.sleep(10)
 
+def publish_to_question_queue(session_id: str, final_body: str):
+    """Publishes a message to the question queue."""
+    try:
+        connection = get_rabbitmq_connection()
+        channel = connection.channel()
+        channel.queue_declare(queue=QUEUE_NAME_QUESTION, durable=True)
+        channel.basic_publish(
+            exchange='',
+            routing_key=QUEUE_NAME_QUESTION,
+            body=final_body,
+            properties=pika.BasicProperties(
+                delivery_mode=2,  # make message persistent
+            )
+        )
+        connection.close()
+        logger.info(f"Sent message to {QUEUE_NAME_QUESTION} for session {session_id}")
+    except AMQPConnectionError as e:
+        # Re-raise to be caught in the endpoint
+        raise e
+
 @app.on_event("startup")
 async def startup_event():
     """Start the RabbitMQ listener thread on application startup."""
@@ -119,19 +139,7 @@ async def chat_endpoint(request: Request):
 
     # Send message to RabbitMQ
     try:
-        connection = get_rabbitmq_connection()
-        channel = connection.channel()
-        channel.queue_declare(queue=QUEUE_NAME_QUESTION, durable=True)
-        channel.basic_publish(
-            exchange='',
-            routing_key=QUEUE_NAME_QUESTION,
-            body=final_body,
-            properties=pika.BasicProperties(
-                delivery_mode=2,  # make message persistent
-            )
-        )
-        connection.close()
-        logger.info(f"Sent message to {QUEUE_NAME_QUESTION} for session {session_id}")
+        await run_in_threadpool(publish_to_question_queue, session_id, final_body)
     except AMQPConnectionError as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: Could not connect to message broker. {e}")
 

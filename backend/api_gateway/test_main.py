@@ -31,6 +31,7 @@ class KnowledgeBaseTestCase(unittest.TestCase):
         url = f"{self.base_url}/chat"
         data = {
             "userId": "123456",
+            "messages": [{"role": "user", "content": "Hello"}]
         }
         start_time = time.time()
         headers = {'content-type': 'application/json'}
