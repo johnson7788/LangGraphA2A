@@ -4,10 +4,11 @@
 # @File  : invoke_langgraph.py
 # @Author: johnson
 # @Contact : github: johnson7788
-# @Desc  : 使用MCP
+# @Desc  : 使用MCP, 首先启动mcp_search.py这个MCP工具，然后启动本程序
 
 import dotenv
 import os
+import asyncio
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 from langchain_openai import ChatOpenAI
@@ -20,34 +21,39 @@ dotenv.load_dotenv()
 
 # 定义一个简单的工具
 @tool
-def web_search(query: str) -> str:
-    """网络搜索"""
-    return f"LangGraph核心技术概念，LangGraph和LangChain同宗同源，底层架构完全相同、接口完全相通。从开发者角度来说，LangGraph也是使用LangChain底层API来接入各类大模型、LangGraph也完全兼容LangChain内置的一系列工具。换而言之，LangGraph的核心功能都是依托LangChain来完成。但是和LangChain的链式工作流哲学完全不同的是，LangGraph的基础哲学是构建图结构的工作流，并引入“状态”这一核心概念来描绘任务执行情况，从而拓展了LangChain LCEL链式语法的功能灵活程度。"
+def calculate_city_distance(city1: str, city2: str) -> str:
+    """即使2个城市之间的距离"""
+    return "200km"
 
-client = MultiServerMCPClient({
-  "websearch": {
-    "url": "http://localhost:9000/mcp",
-    "transport": "streamable_http",
-  }
-})
-tools = await client.get_tools()
 
-# 初始化模型
-model = ChatOpenAI(
-    model="gpt-4.1",
-    openai_api_key=os.getenv('OPENAI_API_KEY'),
-    openai_api_base=os.getenv('OPENAI_API_BASE'),
-    temperature=0
-)
+async def build_agent():
+    client = MultiServerMCPClient({
+      "websearch": {
+        "url": "http://localhost:9000/mcp",
+        "transport": "streamable_http",
+      }
+    })
+    tools = await client.get_tools()
+    tools.append(calculate_city_distance)
 
-# 构建 Agent
-agent = create_react_agent(
-    model=model,
-    prompt="使用web_search搜索后回答用户的问题",
-    tools=[web_search]
-)
+    # 初始化模型
+    model = ChatOpenAI(
+        model="gpt-4.1",
+        openai_api_key=os.getenv('OPENAI_API_KEY'),
+        openai_api_base=os.getenv('OPENAI_API_BASE'),
+        temperature=0
+    )
 
-if __name__ == '__main__':
+    # 构建 Agent
+    agent = create_react_agent(
+        model=model,
+        prompt="使用web_search搜索后回答用户的问题",
+        tools=tools
+    )
+    return agent
+
+async def main():
+    agent = await build_agent()
     inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
     result_state = agent.invoke(inputs)
     new_messages = result_state["messages"]  # 包含工具调用、AI 回复等
@@ -63,5 +69,7 @@ if __name__ == '__main__':
         elif isinstance(m, ToolMessage):
             print(f"{m.type}: {m.content}")
 
+if __name__ == '__main__':
+    asyncio.run(main())
 
 
