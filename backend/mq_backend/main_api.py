@@ -120,6 +120,8 @@ def handle_gpt_stream_response(session_id, user_id, function_id, stream_response
                             }
                             mq_handler.send_message(answer_reference)
                             print(f"[Info] 发送引用和参考数据完成(type 6)：{answer_reference}")
+                    elif data_type == "artifact":
+                        print(f"[Info] 收到artifact数据，如果我们设置的Stream，那么这条数据需要忽略：{chunk}")
                     else:
                         print(f"[警告] 未知的chunk类型：{data_type}，已跳过")
                         continue

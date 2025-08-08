@@ -130,6 +130,9 @@ class A2AClientWrapper:
                         for part in parts:
                             print(f"artifact, {part}")
                             yield {"type": "artifact", "text": part.get("text", "")}
+                elif result.get("kind") == "task":
+                    chunk_status = result["status"]
+                    print(f"任务的状态是: {chunk_status}")
                 else:
                     self.logger.warning(f"未识别的chunk类型: {result.get('kind')}")
             yield {"type": "final", "text": "对话结束"}
