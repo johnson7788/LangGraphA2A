@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 # @Date  : 2025/8/6 10:18
-# @File  : inject_command_tool.py
+# @File  : invoke_langgraph.py
 # @Author: johnson
 # @Contact : github: johnson7788
 # @Desc  : invoke, 非流式的，一次等待所有返回

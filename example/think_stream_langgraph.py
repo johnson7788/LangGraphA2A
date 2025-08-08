@@ -4,7 +4,7 @@
 # @File  : inject_command_tool.py
 # @Author: johnson
 # @Contact : github: johnson7788
-# @Desc  : 流式的返回数据
+# @Desc  : TODO，待完成
 
 import dotenv
 import os

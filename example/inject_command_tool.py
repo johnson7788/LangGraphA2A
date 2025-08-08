@@ -14,10 +14,10 @@ from langgraph.prebuilt import InjectedState, create_react_agent
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from typing import Annotated
 from langgraph.types import Command
-from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 dotenv.load_dotenv()
 
 memory = MemorySaver()
@@ -66,6 +66,17 @@ if __name__ == '__main__':
     config = {'configurable': {'thread_id': "testid_12345"}}
     response = agent.invoke({"messages": [{"role": "user", "content": "我的名字是 Alice"}]}, config=config)
     print(response)
-    response = agent.invoke({"messages": {"role": "user", "content": "what's my name?"}}, config=config)
-    print(response)
+    result_state = agent.invoke({"messages": {"role": "user", "content": "what's my name?"}}, config=config)
+    new_messages = result_state["messages"]  # 包含工具调用、AI 回复等
+    for m in new_messages:
+        if isinstance(m, HumanMessage):
+            print(f"{m.type}: {m.content}")
+        elif isinstance(m, AIMessage):
+            if m.tool_calls:
+                # 工具调用
+                print(f"{m.type}: {m.tool_calls}")
+            else:
+                print(f"{m.type}: {m.content}")
+        elif isinstance(m, ToolMessage):
+            print(f"{m.type}: {m.content}")
 

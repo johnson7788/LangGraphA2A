@@ -19,6 +19,7 @@ from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 dotenv.load_dotenv()
 
 memory = MemorySaver()
@@ -69,6 +70,17 @@ if __name__ == '__main__':
     # Invocation: reads the name from state (initially empty)
     # agent.invoke({"messages": "what's my name?"})  # 简写方法
     config = {'configurable': {'thread_id': "testid_12345"}}
-    response = agent.invoke({"messages": [{"role": "user", "content": "搜索个人和网络内容，总结特斯拉的相关新闻"}]}, config=config)
-    print(response)
+    result_state = agent.invoke({"messages": [{"role": "user", "content": "搜索个人和网络内容，总结特斯拉的相关新闻"}]}, config=config)
+    new_messages = result_state["messages"]  # 包含工具调用、AI 回复等
+    for m in new_messages:
+        if isinstance(m, HumanMessage):
+            print(f"{m.type}: {m.content}")
+        elif isinstance(m, AIMessage):
+            if m.tool_calls:
+                # 工具调用
+                print(f"{m.type}: {m.tool_calls}")
+            else:
+                print(f"{m.type}: {m.content}")
+        elif isinstance(m, ToolMessage):
+            print(f"{m.type}: {m.content}")
 
