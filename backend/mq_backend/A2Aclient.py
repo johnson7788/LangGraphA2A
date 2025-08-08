@@ -97,12 +97,48 @@ class A2AClientWrapper:
             async for chunk in stream_response:
                 self.logger.info(f"输出的chunk内容: {chunk}")
                 chunk_data = chunk.model_dump(mode='json', exclude_none=True)
-                print(chunk_data)
-                yield chunk_data
+                result = chunk_data["result"]
+                # 判断 chunk 类型
+                # 查看parts类型，分为data，text，reasoning，final，例如放入{"type": "text", "text": xxx}，最后yield返回
+                if result.get("kind") == "status-update":
+                    chunk_status = result["status"]
+                    chunk_status_state = chunk_status.get("state")
+
+                    if chunk_status_state == "submitted":
+                        print("任务已经触发，并提交给后端")
+                        continue
+                    elif chunk_status_state == "working":
+                        print("任务处理中")
+
+                    # 尝试提取内容
+                    message = chunk_status.get("message", {})
+                    parts = message.get("parts", [])
+                    if parts:
+                        for part in parts:
+                            part_kind = part["kind"]
+                            print(f"status, {part}")
+                            if part_kind == "data":
+                                yield {"type": "data", "data": part["data"]["data"]}  # 这里我写了2个data的嵌套了
+                            elif part_kind == "text":
+                                yield {"type": "text", "text": part["text"]}
+                            else:
+                                print(f"未知的status-update类型: {part_kind}")
+                                raise ValueError(f"未知的status-update类型: {part_kind}")
+                elif result.get("kind") == "artifact-update":
+                    artifact = result.get("artifact", {})
+                    parts = artifact.get("parts", [])
+                    if parts:
+                        for part in parts:
+                            print(f"artifact, {part}")
+                            yield {"type": "artifact", "text": part.get("text", "")}
+                else:
+                    self.logger.warning(f"未识别的chunk类型: {result.get('kind')}")
+            yield {"type": "final", "text": "对话结束"}
 
 if __name__ == '__main__':
     async def main():
         session_id = time.strftime("%Y%m%d%H%M%S", time.localtime())
         wrapper = A2AClientWrapper(session_id=session_id, agent_url="http://localhost:10000")
-        await wrapper.generate("帕金森的治疗方案有哪些?")
+        async for chunk_data in wrapper.generate("帕金森的治疗方案有哪些?"):
+            print(chunk_data)
     asyncio.run(main())
