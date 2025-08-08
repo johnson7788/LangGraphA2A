@@ -26,5 +26,5 @@
 ## 模拟搜索
 [search.py](search.py)
 
-## 使用
+## 使用tool工具进行计划设定
 [plan_langgraph.py](plan_langgraph.py)
