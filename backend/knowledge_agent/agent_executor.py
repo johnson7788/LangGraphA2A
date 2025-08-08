@@ -125,6 +125,8 @@ def convert_genai_parts_to_a2a(item: dict) -> list[Part]:
     content = item.get("content")
     if data_type == "result":
         return [TextPart(text=content)]
+    elif data_type == "text_chunk":
+        return [TextPart(text=content)]
     elif data_type == "error":
         return [TextPart(text=content)]
     elif data_type == "require_user":

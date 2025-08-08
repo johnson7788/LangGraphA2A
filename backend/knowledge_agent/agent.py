@@ -1,5 +1,7 @@
 import os
 import time
+from collections import defaultdict
+import json
 from collections.abc import AsyncIterable
 from typing import Any, Literal
 from typing import Annotated, NotRequired
@@ -93,36 +95,88 @@ class KnowledgeAgent:
         # 创建langgraph的输入
         inputs = {"messages": history}
         config = {'configurable': {'thread_id': context_id}}
-
-        async for item in self.graph.astream(inputs, config, stream_mode='values'):
-            message = item['messages'][-1]
+        tool_chunks = []
+        metadata = {}
+        async for token, response_metadata in self.graph.astream(inputs, config, stream_mode='messages'):
+            content = token.content or ""
             print(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
-            print(f"Agent输出的message信息: {message}")
+            print(f"Agent输出的message信息: {content}")
             current_state = self.graph.get_state(config)
             search_dbs = current_state.values.get("search_dbs")
             # 作为metadata发送给前端
             metadata = {"search_dbs": search_dbs}
             print(f"search_dbs: {search_dbs}")
             print(f"current_state.metadata: {current_state.metadata}")
-            if isinstance(message, AIMessage) and message.tool_calls and len(message.tool_calls) > 0:
+            tool_call_chunks = token.additional_kwargs.get("tool_calls", [])
+            # 收集工具调用分片
+            if tool_call_chunks:
+                print(f"收集了工具的分块的输出: {tool_call_chunks}")
+                tool_chunks.extend(tool_call_chunks)
+                continue
+
+            # 处理普通 token 输出
+            if content:
+                yield {
+                    'is_task_complete': False,
+                    'require_user_input': False,
+                    'content': content,
+                    'metadata': metadata,
+                    'data_type': 'text_chunk'
+                }
+
+            # 如果检测到工具调用已经结束
+            if "finish_reason" in token.response_metadata and token.response_metadata[
+                "finish_reason"] == "tool_calls":
+                merged_calls = defaultdict(lambda: {
+                    "args": "",
+                    "name": None,
+                    "type": None,
+                    "id": None
+                })
+
+                for chunk in tool_chunks:
+                    index = chunk.get("index", 0)
+                    merged = merged_calls[index]
+                    merged["args"] += chunk.get("function", {}).get("arguments", "")
+                    merged["name"] = chunk.get("function", {}).get("name", "") or merged["name"]
+                    merged["type"] = chunk.get("type") or merged["type"]
+                    merged["id"] = chunk.get("id") or merged["id"]
+
+                final_tool_calls = []
+                for idx in sorted(merged_calls.keys()):
+                    info = merged_calls[idx]
+                    try:
+                        arguments_obj = json.loads(info["args"])
+                    except json.JSONDecodeError:
+                        arguments_obj = info["args"]
+
+                    call = {
+                        "index": idx,
+                        "id": info["id"],
+                        "type": info["type"],
+                        "function": {
+                            "name": info["name"],
+                            "arguments": arguments_obj
+                        }
+                    }
+                    final_tool_calls.append(call)
+
+                # 获取工具调用前的状态信息
+                current_state = self.graph.get_state(config)
+                search_dbs = current_state.values.get("search_dbs")
+                metadata = {"search_dbs": search_dbs}
+
                 yield {
                     'is_task_complete': False,
                     'require_user_input': False,
                     'content': '正在使用tool检索相关知识…',
                     'metadata': metadata,
-                    'data': message.tool_calls,
+                    'data': final_tool_calls,
                     'data_type': 'tool_call'
                 }
-            elif isinstance(message, ToolMessage):
-                yield {
-                    'is_task_complete': False,
-                    'require_user_input': False,
-                    'content': '正在使用tool的检索结果…',
-                    'metadata': metadata,
-                    'data': {"name": message.name, "tool_call_id": message.tool_call_id, "content": message.content},
-                    'data_type': 'tool_response'
-                }
+                tool_chunks.clear()
 
+        # 最终响应（处理 structured_response）
         yield self.get_agent_response(config, metadata)
 
     def get_agent_response(self, config, metadata):

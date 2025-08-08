@@ -124,3 +124,4 @@ sequenceDiagram
 - **记忆**：在回合之间保持对话状态（相同taskid和contextid)
 - **历史记录记忆**：用户提供历史记录也可以记忆
 - **A2A协议集成**：完全符合A2A规范
+- **LLM token Stream**: 
