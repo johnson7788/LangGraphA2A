@@ -3,3 +3,5 @@ uvicorn
 pika
 python-dotenv
 sse-starlette
+pytest
+httpx

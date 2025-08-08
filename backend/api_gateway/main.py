@@ -80,7 +80,6 @@ def listen_to_answer_queue():
             # Avoid busy-looping on unexpected errors
             time.sleep(10)
 
-
 @app.on_event("startup")
 async def startup_event():
     """Start the RabbitMQ listener thread on application startup."""
