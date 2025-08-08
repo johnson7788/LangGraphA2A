@@ -16,6 +16,7 @@ from langgraph.prebuilt.chat_agent_executor import AgentState
 from typing import Annotated
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage
+from langchain_core.runnables import RunnableConfig
 from langchain_core.tools import tool, InjectedToolCallId
 from langchain_openai import ChatOpenAI
 from langgraph.checkpoint.memory import MemorySaver
@@ -26,49 +27,62 @@ memory = MemorySaver()
 
 class CustomState(AgentState):
     # The user_name field in short-term state
-    thread_id: [str]
+    thread_id: NotRequired[str]
 
 PLAN_STORAGE = collections.defaultdict(dict)
 @tool
-def plan_tool(action: str, payload, state: Annotated[CustomState, InjectedState]) -> str:
+def plan_tool(action: str, config: RunnableConfig, payload: list[dict] = []) -> str:
     """
     Plan 工具支持以下操作：
     - action: 'create', 'update', 'get', 'list'
-    - payload: JSON 字符串，提供 key 和内容
+    - payload: list[dict]，例如 [{"step1":"查询xxx"}, {"step2": "然后xxx"}]
     """
-    thread_id = state.get("thread_id")
-    has_plans = PLAN_STORAGE.get(thread_id, {})
-    try:
-        data = json.loads(payload) if payload else {}
-    except json.JSONDecodeError:
-        return "无效的 payload 格式，应为 JSON 字符串。"
+    metadata = config.get("metadata", {})
+    thread_id = metadata.get("thread_id")
+    if not thread_id:
+        return "缺少 thread_id"
 
+    # 初始化存储
+    has_plans = PLAN_STORAGE.setdefault(thread_id, {})
+
+    # 尝试解析 payload
+    if isinstance(payload, str):
+        try:
+            data = json.loads(payload) if payload else []
+        except json.JSONDecodeError:
+            return "无效的 payload 格式，应为 JSON 字符串。"
+    elif isinstance(payload, list):
+        data = payload
+    else:
+        return "无效的 payload 类型，应为字符串或列表。"
+
+    # 不同 action 的处理逻辑
     if action == "create":
-        key = data.get("key")
-        content = data.get("content")
-        if not key or not content:
-            return "缺少 key 或 content。"
-        has_plans[key] = content
-        return f"已创建 plan: {key} -> {content}"
+        for item in data:
+            has_plans.update(item)
+        return f"已创建 plan: {data}"
+
     elif action == "update":
-        key = data.get("key")
-        content = data.get("content")
-        if key not in has_plans:
-            return f"Plan '{key}' 不存在，无法更新。"
-        has_plans[key] = content
-        return f"已更新 plan: {key} -> {content}"
+        for item in data:
+            has_plans.update(item)
+        return f"已更新 plan: {data}"
+
     elif action == "get":
-        key = data.get("key")
+        if not data or not isinstance(data, list) or not isinstance(data[0], dict):
+            return "get 操作需要 payload 中包含 key，例如 [{\"key\": \"step1\"}]"
+        key = data[0].get("key")
+        if not key:
+            return "get 操作需要提供 key"
         content = has_plans.get(key)
-        if content is None:
-            return f"Plan '{key}' 不存在。"
-        return f"{key} -> {content}"
+        return f"{key} -> {content}" if content else f"Plan '{key}' 不存在。"
+
     elif action == "list":
         if not has_plans:
             return "暂无任何 plan。"
         return "\n".join(f"{k}: {v}" for k, v in has_plans.items())
     else:
         return f"未知的 action: {action}，支持：create/update/get/list。"
+
 
 
 @tool

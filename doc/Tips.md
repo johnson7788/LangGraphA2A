@@ -306,3 +306,20 @@ Headers({'accept': '*/*', 'accept-encoding': 'gzip, deflate, zstd', 'connection'
 # 流式输出分2种
 A2A中的流式，代表每个步骤都是运行出结果后都发送给客户端, 我们命名: Step Stream
 LLM中的流式，代表每个token输出都发送给前端， 我们命名: Token Stream
+
+# Tool中如何获取session_id
+参考
+[plan_langgraph.py](..%2Fexample%2Fplan_langgraph.py)
+可以使用
+```
+from langchain_core.runnables import RunnableConfig
+@tool
+def plan_tool(action: str, payload, config: RunnableConfig) -> str:
+    """
+    Plan 工具支持以下操作：
+    - action: 'create', 'update', 'get', 'list'
+    - payload: JSON 字符串，提供 key 和内容
+    """
+    metadata = config.get("metadata")
+    thread_id = metadata.get("thread_id")
+```
