@@ -88,7 +88,6 @@ class KnowledgeAgent:
         "如果处理过程中发生错误，请将 status 设置为 'error'；\n"
         "如果请求成功完成，请将 status 设置为 'completed'。"
     )
-
     def __init__(self, mcp_config=None):
         self.model = create_model()
         self.mcp_config = mcp_config
@@ -113,6 +112,7 @@ class KnowledgeAgent:
             state_schema=CustomState,
             pre_model_hook=pre_model_hook
         )
+        print(f"初始化graph： {self.graph}")
         return self  # 方便链式调用
     async def stream(self, query, history, context_id) -> AsyncIterable[dict[str, Any]]:
         """
@@ -124,6 +124,8 @@ class KnowledgeAgent:
         Returns:
         """
         # 塑造历史记录
+        if self.graph is None:
+            await self.ainit()
         history = [
             HumanMessage(content=msg['content']) if msg['role'] in ['human','user']
             else AIMessage(content=msg['content'])
@@ -136,6 +138,7 @@ class KnowledgeAgent:
         config = {'configurable': {'thread_id': context_id}}
         tool_chunks = []
         metadata = {}
+        print(f"self.graph： {self.graph}")
         async for token, response_metadata in self.graph.astream(inputs, config, stream_mode='messages'):
             content = token.content or ""
             print(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))

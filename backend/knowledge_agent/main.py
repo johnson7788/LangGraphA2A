@@ -43,7 +43,7 @@ async def start_server(host, port, mcp_config):
         skills=[skill],
     )
     # 启动服务
-    agent_executor = await KnowledgeAgentExecutor.create(mcp_config)
+    agent_executor = KnowledgeAgentExecutor(mcp_config)
     request_handler = DefaultRequestHandler(
         agent_executor=agent_executor,
         task_store=InMemoryTaskStore(),

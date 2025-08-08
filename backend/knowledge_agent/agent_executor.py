@@ -47,13 +47,6 @@ class KnowledgeAgentExecutor(AgentExecutor):
 
     def __init__(self, mcp_config=None):
         self.agent = KnowledgeAgent(mcp_config)
-
-    @classmethod
-    async def create(cls, mcp_config=None):
-        # 构造 Agent 改为异步
-        agent = KnowledgeAgent(mcp_config)
-        await agent.ainit()
-        return cls(agent)
     async def execute(
         self,
         context: RequestContext,
