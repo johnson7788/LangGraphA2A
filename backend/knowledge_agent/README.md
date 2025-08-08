@@ -63,7 +63,7 @@ sequenceDiagram
 ## 先决条件
 
 - Python 3.12或更高版本
-- 访问.env，配置 LLM和API密钥
+- 访问.env，配置 LLM和API密钥, cp env_template .env，然后修改
 - pip install -r requirements.txt
 
 
