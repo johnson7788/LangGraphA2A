@@ -28,3 +28,9 @@
 
 ## 使用tool工具进行计划设定
 [plan_langgraph.py](plan_langgraph.py)
+
+## MCP工具(streamable-http协议)
+[mcp_search.py](mcp_search.py)
+
+## langgraph使用mcp
+[mcp_langgraph.py](mcp_langgraph.py)
