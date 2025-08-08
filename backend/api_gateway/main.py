@@ -1,4 +1,5 @@
 
+import time
 import asyncio
 import json
 import os
@@ -134,7 +135,6 @@ async def chat_endpoint(request: Request):
         logger.info(f"Sent message to {QUEUE_NAME_QUESTION} for session {session_id}")
     except AMQPConnectionError as e:
         raise HTTPException(status_code=503, detail=f"Service unavailable: Could not connect to message broker. {e}")
-
 
     async def event_generator():
         """Generator function for SSE."""
