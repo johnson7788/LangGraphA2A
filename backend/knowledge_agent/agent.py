@@ -95,7 +95,7 @@ class KnowledgeAgent:
         self.graph = None  # 等异步初始化完才赋值
 
     async def ainit(self):
-        if self.mcp_config:
+        if self.mcp_config and os.path.exists(self.mcp_config):
             print(f"提供了mcp_config，开始加载mcp_config: {self.mcp_config}")
             mcp_config_tools = load_mcp_servers(config_path=self.mcp_config)
             client = MultiServerMCPClient(mcp_config_tools)
