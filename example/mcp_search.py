@@ -119,4 +119,5 @@ def search_guideline_db(query: str, max_results: int = 3):
     return results[:max_results]
 
 if __name__ == "__main__":
-    mcp.run(transport="streamable-http")
+    mcp.run(transport="sse")
+    # mcp.run(transport="streamable-http")

@@ -12,6 +12,7 @@ from tools import search_document_db, search_personal_db, search_guideline_db
 from langchain_core.messages.utils import trim_messages, count_tokens_approximately
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
+from langchain_mcp_adapters.client import MultiServerMCPClient
 import operator
 from models import create_model
 import dotenv
@@ -90,12 +91,19 @@ class KnowledgeAgent:
 
     def __init__(self, mcp_config=None):
         self.model = create_model()
+        self.mcp_config = mcp_config
         self.tools = [search_document_db, search_personal_db, search_guideline_db]
-        if mcp_config:
-            print(f"提供了mcp_config，开始加载mcp_config: {mcp_config}")
-            mcp_tools = load_mcp_servers(config_path=mcp_config)
-            self.tools.extend(mcp_tools)
+        self.graph = None  # 等异步初始化完才赋值
+
+    async def ainit(self):
+        if self.mcp_config:
+            print(f"提供了mcp_config，开始加载mcp_config: {self.mcp_config}")
+            mcp_config_tools = load_mcp_servers(config_path=self.mcp_config)
+            client = MultiServerMCPClient(mcp_config_tools)
+            tools = await client.get_tools()
+            self.tools.extend(tools)
         print(f"LLM可用的工具总数是: {len(self.tools)}")
+
         self.graph = create_react_agent(
             self.model,
             tools=self.tools,
@@ -105,7 +113,7 @@ class KnowledgeAgent:
             state_schema=CustomState,
             pre_model_hook=pre_model_hook
         )
-
+        return self  # 方便链式调用
     async def stream(self, query, history, context_id) -> AsyncIterable[dict[str, Any]]:
         """
         调用langgraph 处理用户的请求，并流式的返回
