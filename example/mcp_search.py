@@ -6,10 +6,12 @@
 # @Contact : github: johnson7788
 # @Desc  :
 
-
-# math_server.py
+import logging
 from mcp.server.fastmcp import FastMCP
 import time
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.DEBUG)
 
 mcp = FastMCP("MCP搜索工具", host="127.0.0.1", port=9000)
 
