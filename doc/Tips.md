@@ -301,3 +301,8 @@ Headers({'accept': '*/*', 'accept-encoding': 'gzip, deflate, zstd', 'connection'
 
 * **taskId**：每次交互的最小单位，唯一且专注于一个任务的执行。
 * **contextId**：用于串联多个 task，形成一个上下文或会话背景，尤为适用于复杂或长流程的任务编排。
+
+
+# 流式输出分2种
+A2A中的流式，代表每个步骤都是运行出结果后都发送给客户端, 我们命名: Step Stream
+LLM中的流式，代表每个token输出都发送给前端， 我们命名: Token Stream
