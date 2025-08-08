@@ -1,0 +1,5 @@
+fastapi
+uvicorn
+pika
+python-dotenv
+sse-starlette
