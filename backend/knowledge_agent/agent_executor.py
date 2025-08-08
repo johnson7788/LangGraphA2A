@@ -1,5 +1,5 @@
 import logging
-
+import os
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
 from a2a.server.tasks import TaskUpdater
@@ -45,8 +45,8 @@ logger = logging.getLogger(__name__)
 class KnowledgeAgentExecutor(AgentExecutor):
     """知识问答 AgentExecutor 示例."""
 
-    def __init__(self):
-        self.agent = KnowledgeAgent()
+    def __init__(self, mcp_config=None):
+        self.agent = KnowledgeAgent(mcp_config)
 
     async def execute(
         self,

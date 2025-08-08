@@ -25,7 +25,8 @@ logger = logging.getLogger(__name__)
 @click.command()
 @click.option('--host', 'host', default='localhost')
 @click.option('--port', 'port', default=10000)
-def main(host, port):
+@click.option('--mcp', 'mcp_config', default="mcp_config.json", help='MCP 配置文件路径')
+def main(host, port, mcp_config):
     """启动知识库问答 Agent 服务。"""
     try:
         capabilities = AgentCapabilities(streaming=True)
@@ -50,7 +51,7 @@ def main(host, port):
         # 启动服务
         httpx_client = httpx.AsyncClient()
         request_handler = DefaultRequestHandler(
-            agent_executor=KnowledgeAgentExecutor(),
+            agent_executor=KnowledgeAgentExecutor(mcp_config),
             task_store=InMemoryTaskStore(),
         )
         server = A2AStarletteApplication(

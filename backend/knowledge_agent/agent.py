@@ -3,7 +3,7 @@ import time
 from collections import defaultdict
 import json
 from collections.abc import AsyncIterable
-from typing import Any, Literal
+from typing import Any, Literal,Dict
 from typing import Annotated, NotRequired
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langgraph.prebuilt import create_react_agent
@@ -43,6 +43,33 @@ class CustomState(AgentState):
     # 搜索的数据库的metadata信息的存储
     search_dbs: Annotated[list[dict], operator.add]
 
+def load_mcp_servers(config_path: str) -> Dict[str, Any]:
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    servers_config = config.get("mcpServers", {})
+    servers: Dict[str, Any] = {}
+
+    for name, entry in servers_config.items():
+        if entry.get("disabled", False):
+            continue
+
+        if entry.get("transport") == "stdio":
+            servers[name] = {
+                "command": entry["command"],
+                "args": entry.get("args", []),
+                "env": entry.get("env", {}),
+                "transport": "stdio"
+            }
+        else:
+            servers[name] = {
+                "url": entry["url"],
+                "transport": entry["transport"]
+            }
+
+    return servers
+
+
 class KnowledgeAgent:
     """知识库问答 Agent"""
 
@@ -61,10 +88,14 @@ class KnowledgeAgent:
         "如果请求成功完成，请将 status 设置为 'completed'。"
     )
 
-    def __init__(self):
+    def __init__(self, mcp_config=None):
         self.model = create_model()
         self.tools = [search_document_db, search_personal_db, search_guideline_db]
-
+        if mcp_config:
+            print(f"提供了mcp_config，开始加载mcp_config: {mcp_config}")
+            mcp_tools = load_mcp_servers(config_path=mcp_config)
+            self.tools.extend(mcp_tools)
+        print(f"LLM可用的工具总数是: {len(self.tools)}")
         self.graph = create_react_agent(
             self.model,
             tools=self.tools,
