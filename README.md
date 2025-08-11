@@ -107,6 +107,7 @@ npm run start
 * Step Streaming 返回，LLM的每一个步骤返回给client ✅
 * LLM Token Streaming 返回 ✅
 * MCP 外挂集成 ✅
+* 工具动态切换，根据传入的tool的metadata，使用不同的工具（根据tool不同，创建不同的graph)
 * LLM Thinking 返回
 * Plan 模式 
 * 改造 https://github.com/google-gemini/gemini-fullstack-langgraph-quickstart  也为A2A形式
