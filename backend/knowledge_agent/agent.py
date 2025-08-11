@@ -71,6 +71,7 @@ class KnowledgeAgent:
             mcp_config: mcp工具
             select_tool_names: 内置的可选工具
         """
+        self.default_select_tool_names = select_tool_names
         self.model = create_model()
         self.mcp_config = mcp_config
         select_tools = []
@@ -80,9 +81,8 @@ class KnowledgeAgent:
             else:
                 select_tools.append(tool_name)
         self.tools = select_tools
-        self.graph = None  # 等异步初始化完才赋值
         tool_names = '、'.join(select_tool_names)
-        self.SYSTEM_INSTRUCTION = f"""你是一个知识库问答助手。你的任务是：
+        self.SYSTEM_INSTRUCTION = """你是一个知识库问答助手。你的任务是：
         1. 根据用户提出的问题，确定合适的关键词；
         2. 调用工具（如 {tool_names}）搜索相应的知识库；
         3. 可以多次使用不同关键词不断检索，直到找到答案或明确无法找到信息；
@@ -91,39 +91,55 @@ class KnowledgeAgent:
         6. 知识库中的参考被引用时，请在文中末尾位置添加类似[^1]格式的参考链接，确保引用明确。
         如果用户的问题超出知识库或工具范围，就礼貌告知无法处理该类型问题。
         """
+        self.graphes = {} # 等异步初始化完才赋值
 
-    async def ainit(self):
+    async def create_graph(self, tool_names=[]):
+        """
+        创建graph,并传入合适的tools
+        Args:
+            tool_names: list[str], 如果为空，表示使用所有工具
+        Returns:
+        """
+        select_tools = []
+        if tool_names == []:
+            tool_names = self.default_select_tool_names
+            print(f"传入的tool_names为空，使用默认所有工具： {tool_names}")
+        for tool_name in tool_names:
+            select_tools.append(eval(tool_name))
         if self.mcp_config and os.path.exists(self.mcp_config):
             print(f"提供了mcp_config，开始加载mcp_config: {self.mcp_config}")
             mcp_config_tools = load_mcp_servers(config_path=self.mcp_config)
             client = MultiServerMCPClient(mcp_config_tools)
             tools = await client.get_tools()
-            self.tools.extend(tools)
+            select_tools.extend(tools)
         print(f"LLM可用的工具总数是: {len(self.tools)}")
 
-        self.graph = create_react_agent(
+        SYSTEM_INSTRUCTION = self.SYSTEM_INSTRUCTION.format(tool_names=tool_names)
+        graph = create_react_agent(
             self.model,
-            tools=self.tools,
+            tools=select_tools,
             checkpointer=memory,
-            prompt=self.SYSTEM_INSTRUCTION,
+            prompt=SYSTEM_INSTRUCTION,
             response_format=(self.FORMAT_INSTRUCTION, ResponseFormat),
             state_schema=CustomState,
             pre_model_hook=pre_model_hook
         )
-        print(f"初始化graph： {self.graph}")
-        return self  # 方便链式调用
-    async def stream(self, query, history, context_id) -> AsyncIterable[dict[str, Any]]:
+        print(f"初始化graph： {graph}")
+        return graph
+    async def stream(self, query, history, context_id, tools=[]) -> AsyncIterable[dict[str, Any]]:
         """
         调用langgraph 处理用户的请求，并流式的返回
         Args:
             query:  str: 问题
             history: list: 历史记录，可以传入或者不传入，如果context_id相同，也不会对已有的langgraph的MemorySaver影响
             context_id:
+            tools: list[str]，使用那些工具，如果为[]，表示使用所有工具
         Returns:
         """
         # 塑造历史记录
-        if self.graph is None:
-            await self.ainit()
+        if self.graphes.get(context_id) is None:
+            self.graphes[context_id] = self.create_graph(tool_names=tools)
+        graph_instance = self.graphes[context_id]
         history = [
             HumanMessage(content=msg['content']) if msg['role'] in ['human','user']
             else AIMessage(content=msg['content'])
@@ -136,12 +152,12 @@ class KnowledgeAgent:
         config = {'configurable': {'thread_id': context_id}}
         tool_chunks = []
         metadata = {}
-        print(f"self.graph： {self.graph}")
-        async for token, response_metadata in self.graph.astream(inputs, config, stream_mode='messages'):
+        print(f"graph_instance： {graph_instance}")
+        async for token, response_metadata in graph_instance.astream(inputs, config, stream_mode='messages'):
             content = token.content or ""
             print(time.strftime("%Y/%m/%d %H:%M:%S", time.localtime()))
             print(f"Agent输出的message信息: {content}")
-            current_state = self.graph.get_state(config)
+            current_state = graph_instance.get_state(config)
             search_dbs = current_state.values.get("search_dbs")
             # 作为metadata发送给前端
             metadata = {"search_dbs": search_dbs}
@@ -202,7 +218,7 @@ class KnowledgeAgent:
                     final_tool_calls.append(call)
 
                 # 获取工具调用前的状态信息
-                current_state = self.graph.get_state(config)
+                current_state = graph_instance.get_state(config)
                 search_dbs = current_state.values.get("search_dbs")
                 metadata = {"search_dbs": search_dbs}
 
@@ -217,11 +233,11 @@ class KnowledgeAgent:
                 tool_chunks.clear()
 
         # 最终响应（处理 structured_response）
-        yield self.get_agent_response(config, metadata)
+        yield self.get_agent_response(config, metadata, graph_instance)
 
-    def get_agent_response(self, config, metadata):
+    def get_agent_response(self, config, metadata, graph_instance):
         # 自己组装的metadata信息，用于返回给前端
-        current_state = self.graph.get_state(config)
+        current_state = graph_instance.get_state(config)
         structured_response = current_state.values.get('structured_response')
         print(f"Agent输出:structured_response.message: {structured_response.message}")
         if structured_response and isinstance(structured_response, ResponseFormat):

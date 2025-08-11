@@ -241,8 +241,6 @@ def handle_rabbit_queue_message(rabbit_message):
         print('不在进行处理这条消息，function_id NOT  : ' + str(function_id))
         return
 
-
-
 def callback(ch, method, properties, body):
     """
     mq接收到消息后的回调函数，多线程处理
