@@ -12,8 +12,11 @@ from langchain_core.tools import tool
 from langgraph.types import Command
 from langchain_core.messages import ToolMessage
 from langchain_core.tools import tool, InjectedToolCallId
+from langgraph.prebuilt import InjectedState
+from custom_state import CustomState
+
 @tool
-def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], max_results: int = 3) -> Command:
+def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], state: Annotated[CustomState, InjectedState],  max_results: int = 3) -> Command:
     """
     模拟搜索文献库：包括标题、snippet、content、来源、时间等。
 
@@ -27,6 +30,7 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
     print(f"触发了调用search_document_db: {query}")
     results = [
         {
+            "id": 1,
             "title": "CuATSM 恢复 SOD1 功能：小鼠病症逆转研究",
             "snippet": "在帕金森小鼠模型中，用 CuATSM 递送铜可防止神经退化，显著改善运动能力。",
             "content": (
@@ -39,6 +43,7 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
             "timestamp": "2025‑07‑10"
         },
         {
+            "id": 2,
             "title": "MLi‑2 抑制 LRRK2：促进神经纤毛再生与神经保护",
             "snippet": "MLi‑2 在 LRRK2 突变型小鼠中，再生纤毛，恢复细胞通信并提升神经保护。",
             "content": (
@@ -50,6 +55,7 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
             "timestamp": "2025‑07‑10"
         },
         {
+            "id": 3,
             "title": "Tavapadon 新药：TEMPO 3 期临床数据",
             "snippet": "腾博登（tavapadon）靶向 D1/D5 受体，延长“on time”，不良反应少。",
             "content": (
@@ -62,10 +68,22 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
         },
     ]
     search_res = results[:max_results]
+    # 是否存在已经搜索过的结果，如果存在，那么顺序应该按序号进行排列
+    # finished_search = state.get("search_dbs", [])
+    # if finished_search:
+    #     total_result_num = 0
+    #     for i, res in enumerate(finished_search):
+    #         has_result = res["result"]
+    #         # 看看里面有多少个结果结果了
+    #         total_result_num += len(has_result)
+    # else:
+    #     # 如果不存在更多的搜索结果，那么序号从0开始
+    #     total_result_num = 0
+    # 添加序号
     search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
     print(f"tool_call_id: {tool_call_id}")
     return Command(update={
-        "search_dbs": [{"db": "search_document_db", "result": results}],
+        "search_dbs": [{"db": "search_document_db", "result": search_res}],
         "messages": [
             ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]
@@ -74,7 +92,7 @@ def search_document_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
 
 
 @tool
-def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], max_results: int = 3) -> Command:
+def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCallId], state: Annotated[CustomState, InjectedState], max_results: int = 3) -> Command:
     """
     模拟搜索指南库：包括推荐内容、content 字段详实说明建议依据与适应症。
     Args:
@@ -86,6 +104,7 @@ def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCal
     print(f"触发了调用search_guideline_db: {query}")
     results = [
         {
+            "id": 50,
             "title": "MDS 2025：治疗运动波动的循证综述",
             "snippet": "官方推荐多种药物与手术选项用于改善 levodopa 相关起伏。",
             "content": (
@@ -99,6 +118,7 @@ def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCal
             "timestamp": "2025‑05"
         },
         {
+            "id": 51,
             "title": "FDA 批准 adaptive DBS（闭环深部脑刺激，aDBS）",
             "snippet": "首个可根据脑电信号自动调节的 DBS 系统获 FDA 批准。",
             "content": (
@@ -111,6 +131,7 @@ def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCal
             "timestamp": "2025‑02"
         },
         {
+            "id": 52,
             "title": "Onapgo 药物输注治疗 motor fluctuations",
             "snippet": "FDA 批准皮下输注 apomorphine，用于显著 “off” 时间的患者。",
             "content": (
@@ -127,7 +148,7 @@ def search_guideline_db(query: str, tool_call_id: Annotated[str, InjectedToolCal
     search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
     print(f"tool_call_id: {tool_call_id}")
     return Command(update={
-        "search_dbs": [{"db": "search_guideline_db", "result": results}],
+        "search_dbs": [{"db": "search_guideline_db", "result": search_res}],
         "messages": [
             ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]
@@ -147,6 +168,7 @@ def search_personal_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
     print(f"触发了调用search_personal_db: {query}")
     results = [
         {
+            "id": 80,
             "title": "笔记：GLP‑1 类药物在帕金森中的神经保护潜力",
             "snippet": "记录 lixisenatide 在临床中延缓症状的初步结果。",
             "content": (
@@ -158,6 +180,7 @@ def search_personal_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
             "created": "2025‑06‑30"
         },
         {
+            "id": 81,
             "title": "康复训练笔记：Rock Steady Boxing 对情绪与运动改善",
             "snippet": "总结 RSB 对抑郁和运动症状的双重益处。",
             "content": (
@@ -168,6 +191,7 @@ def search_personal_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
             "created": "2025‑07‑15"
         },
         {
+            "id": 82,
             "title": "实验药 Solengepras（CVN‑424）阶段Ⅲ进展记录",
             "snippet": "GPR6 逆激动剂全口服小分子，进入 III 期临床。",
             "content": (
@@ -182,7 +206,7 @@ def search_personal_db(query: str, tool_call_id: Annotated[str, InjectedToolCall
     search_res_string = json.dumps(search_res, ensure_ascii=False, indent=2)
     print(f"tool_call_id: {tool_call_id}")
     return Command(update={
-        "search_dbs": [{"db": "search_personal_db", "result": results}],
+        "search_dbs": [{"db": "search_personal_db", "result": search_res}],
         "messages": [
             ToolMessage(content=search_res_string, tool_call_id=tool_call_id)
         ]

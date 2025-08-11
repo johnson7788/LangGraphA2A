@@ -4,17 +4,15 @@ from collections import defaultdict
 import json
 from collections.abc import AsyncIterable
 from typing import Any, Literal,Dict
-from typing import Annotated, NotRequired
 from langgraph.prebuilt.chat_agent_executor import AgentState
 from langgraph.prebuilt import create_react_agent
-from pydantic import BaseModel
 from tools import search_document_db, search_personal_db, search_guideline_db
 from langchain_core.messages.utils import trim_messages, count_tokens_approximately
 from langgraph.checkpoint.memory import MemorySaver
 from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 from langchain_mcp_adapters.client import MultiServerMCPClient
-import operator
 from models import create_model
+from custom_state import CustomState, ResponseFormat
 import dotenv
 dotenv.load_dotenv()
 
@@ -32,17 +30,6 @@ def pre_model_hook(state: AgentState):
     )
     return {"llm_input_messages": trimmed}
 
-class ResponseFormat(BaseModel):
-    """按照这个格式回答用户。"""
-
-    status: Literal['completed', 'error'] = 'completed'
-    message: str
-
-class CustomState(AgentState):
-    # The user_name field in short-term state
-    structured_response: NotRequired[ResponseFormat]
-    # 搜索的数据库的metadata信息的存储
-    search_dbs: Annotated[list[dict], operator.add]
 
 def load_mcp_servers(config_path: str) -> Dict[str, Any]:
     with open(config_path, "r", encoding="utf-8") as f:
