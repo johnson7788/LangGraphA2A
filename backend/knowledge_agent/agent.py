@@ -138,7 +138,7 @@ class KnowledgeAgent:
         """
         # 塑造历史记录
         if self.graphes.get(context_id) is None:
-            self.graphes[context_id] = self.create_graph(tool_names=tools)
+            self.graphes[context_id] = await self.create_graph(tool_names=tools)
         graph_instance = self.graphes[context_id]
         history = [
             HumanMessage(content=msg['content']) if msg['role'] in ['human','user']
