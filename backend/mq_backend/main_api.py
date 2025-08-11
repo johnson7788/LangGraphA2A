@@ -4,6 +4,7 @@
 import os
 import random
 import string
+import requests
 import time
 import json
 import asyncio
@@ -27,6 +28,64 @@ RABBITMQ_VIRTUAL_HOST = os.environ["RABBITMQ_VIRTUAL_HOST"]
 QUEUE_NAME_ANSWER = os.environ["QUEUE_NAME_ANSWER"]
 QUEUE_NAME_QUESTION = os.environ["QUEUE_NAME_QUESTION"]
 AGENT_URL = os.environ["AGENT_URL"]
+ENTITY_URL = os.environ["ENTITY_URL"]
+
+def entity_indentify_extract_match_db(content):
+    """entity_indentify_extract识别接口
+    eg: content: 近年来，糖尿病患者数量逐年上升，常用的治疗药物包括盐酸二甲双胍片、胰岛素注射液等。部分患者还伴有高血压，需要服用氯沙坦或硝苯地平进行控制。"
+    Returns:
+        eg:
+{
+    "code": 0,
+    "msg": "success",
+    "data": {
+        "diseases": [
+            {
+                "id": 4633,
+                "disease_name": "高血压",
+                "overview": "高血压（hypertension）是指以体循环动脉血压（收缩压和/或舒张压）增高为主要特征（收缩压≥140毫米汞柱，舒张压≥90毫米汞柱），可伴有心、脑、肾等器官的功能或器质性损害的临床综合征。高血压是最常见的慢性病，也是心脑血管病最主要的危险因素。正常人的血压随内外环境变化在一定范围内波动。在整体人群，血压水平随年龄逐渐升高，以收缩压更为明显，但50岁后舒张压呈现下降趋势，脉压也随之加大。近年来，人们对心血管病多重危险因素的作用以及心、脑、肾靶器官保护的认识不断深入，高血压的诊断标准也在不断调整，目前认为同一血压水平的患者发生心血管病的危险不同，因此有了血压分层的概念，即发生心血管病危险度不同的患者，适宜血压水平应有不同。血压值和危险因素评估是诊断和制定高血压治疗方案的主要依据，不同患者高血压管理的目标不同，医生面对患者时在参考标准的基础上，根据其具体情况判断该患者最合适的血压范围，采用针对性的治疗措施。在改善生活方式的基础上，推荐使用24小时长效降压药物控制血压。除评估诊室血压外，患者还应注意家庭清晨血压的监测和管理，以控制血压，降低心脑血管事件的发生率。",
+                "match_word": "高血压"
+            },
+            {
+                "id": 7608,
+                "disease_name": "糖尿病",
+                "overview": "糖尿病是一组以高血糖为特征的代谢性疾病。高血糖则是由于胰岛素分泌缺陷或其生物作用受损，或两者兼有引起。糖尿病时长期存在的高血糖，导致各种组织，特别是眼、肾、心脏、血管、神经的慢性损害、功能障碍。",
+                "match_word": "糖尿病"
+            }
+        ],
+        "drugs": [
+            {
+                "id": 259152,
+                "drug_id": "185917",
+                "med_name": "盐酸二甲双胍片",
+                "component": "<p>【化学名称】 <br/>\n1,1-二甲基双胍盐酸盐</p>\n\n<p>【化学结构式】</p>\n\n<p><img rel=\"https://img1.dxycdn.com/2019/1211/311/3384551398150199955-73.gif\"  src = \"https://img1.dxycdn.com/2019/1211/311/3384551398150199955-73.gif\" alt = \"\" /></p>\n\n<p>【分子量】 <br/>\n165.63</p>",
+                "match_word": "盐酸二甲双胍片"
+            },
+            {
+                "id": 236868,
+                "drug_id": "177275",
+                "med_name": "胰岛素注射液",
+                "component": "本品主要成份为胰岛素（猪或牛）的灭菌水溶液。辅料为：甘油。",
+                "match_word": "胰岛素注射液"
+            }
+        ]
+    }
+}
+
+    """
+    url = f"{ENTITY_URL}/api/entity_indentify"
+    start_time = time.time()
+    headers = {'content-type': 'application/json'}
+    data = {"match_db": True,"content": content}
+    r = requests.post(url, data=json.dumps(data), headers=headers)
+    assert r.status_code == 200, f"返回的status code不是200，请检查"
+    # 检查转换结果
+    res = r.json()
+    print(json.dumps(res, indent=4, ensure_ascii=False))
+    msg = res.get("msg")
+    assert msg == "success", f"接口返回的msg不是成功，请检查"
+    print(f"花费时间: {time.time() - start_time}秒")
+    return res
 
 def handle_gpt_stream_response(session_id, user_id, function_id, stream_response):
     """
@@ -124,6 +183,19 @@ def handle_gpt_stream_response(session_id, user_id, function_id, stream_response
                         print(f"[Info] 收到artifact数据，如果我们设置的Stream，那么这条数据需要忽略：{chunk}")
                         #识别实体
                         artifact_content = chunk["text"]
+                        if ENTITY_URL:
+                            entities = entity_indentify_extract_match_db(artifact_content)
+                            entities_data = entities["data"]
+                            entities_message = {
+                                "sessionId": session_id,
+                                "userId": user_id,
+                                "functionId": function_id,
+                                "message": json.dumps(entities_data, ensure_ascii=False),
+                                "reasoningMessage": "",
+                                "type": 7,
+                            }
+                            mq_handler.send_message(entities_message)
+                            print(f"[Info] 发送实体识别数据(type 7)：{entities_message}")
                     else:
                         print(f"[警告] 未知的chunk类型：{data_type}，已跳过")
                         continue

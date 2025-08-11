@@ -9,7 +9,6 @@ from unittest.mock import patch, MagicMock, ANY
 import pytest
 from httpx import AsyncClient
 
-
 class KnowledgeBaseTestCase(unittest.TestCase):
     """
     测试 FastAPI 接口
