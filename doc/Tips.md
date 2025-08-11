@@ -323,3 +323,54 @@ def plan_tool(action: str, payload, config: RunnableConfig) -> str:
     metadata = config.get("metadata")
     thread_id = metadata.get("thread_id")
 ```
+
+# Rabbit MQ `durable=True`
+
+```python
+channel.queue_declare(queue=QUEUE_NAME_READ, durable=True)
+```
+
+### `durable=True` 的意思
+
+这是 **RabbitMQ** 队列声明的一个参数，用来指定 **队列是否持久化**（Durable Queue）。
+
+* **`durable=True`** → 队列会被持久化到磁盘，即 RabbitMQ 重启后，队列依然存在。
+* **`durable=False`**（默认） → 队列是临时的，RabbitMQ 重启后队列会消失。
+
+---
+
+### 注意事项
+
+1. **只是队列持久化**
+
+   * 这个参数保证的是**队列本身的元数据**（队列名、绑定关系等）在 RabbitMQ 重启后还能找回来。
+   * 它**不保证队列里的消息持久化**，消息是否持久化取决于 **`delivery_mode=2`**（你代码里也有用到）。
+
+2. **要保证消息也持久化，需要两个条件**
+
+   * 队列 `durable=True`
+   * 消息属性 `delivery_mode=2`（持久化消息）
+
+   ```python
+   properties=pika.BasicProperties(delivery_mode=2)
+   ```
+
+   你在 `publish_to_question_queue` 里有设置这一点，所以消息也能存盘。
+
+3. **消费者和生产者声明 durable 必须一致**
+
+   * 如果生产者声明 durable=True，而消费者声明 durable=False（或反之），会报错：
+
+     ```
+     PRECONDITION_FAILED - inequivalent arg 'durable' for queue
+     ```
+
+---
+
+### 小总结
+
+在你这份代码里：
+
+* `channel.queue_declare(..., durable=True)` → 队列重启不丢
+* `delivery_mode=2` → 消息重启不丢
+  **两者配合**才能实现 RabbitMQ “断电重启消息依然存在”。
