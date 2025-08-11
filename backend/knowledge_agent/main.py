@@ -61,8 +61,9 @@ async def start_server(host, port, mcp_config, select_tool_names):
 @click.option('--host', default='localhost')
 @click.option('--port', default=10000)
 @click.option('--mcp', default="mcp_config.json", help='MCP 配置文件路径')
-@click.option('--select_tool_names', default=["search_document_db", "search_personal_db", "search_guideline_db"], help='使用的内部工具')
+@click.option('--select_tool_names', default="search_document_db,search_personal_db,search_guideline_db", help='使用的内部工具，逗号分隔')
 def main(host, port, mcp, select_tool_names):
+    select_tool_names = select_tool_names.split(",")
     asyncio.run(start_server(host, port, mcp, select_tool_names))
 
 if __name__ == '__main__':
