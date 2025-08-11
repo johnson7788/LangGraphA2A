@@ -45,8 +45,8 @@ logger = logging.getLogger(__name__)
 class KnowledgeAgentExecutor(AgentExecutor):
     """知识问答 AgentExecutor 示例."""
 
-    def __init__(self, mcp_config=None):
-        self.agent = KnowledgeAgent(mcp_config)
+    def __init__(self, mcp_config=None, select_tool_names=[]):
+        self.agent = KnowledgeAgent(mcp_config, select_tool_names)
     async def execute(
         self,
         context: RequestContext,

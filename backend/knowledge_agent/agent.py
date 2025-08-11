@@ -60,26 +60,37 @@ def load_mcp_servers(config_path: str) -> Dict[str, Any]:
 
 class KnowledgeAgent:
     """知识库问答 Agent"""
-
-    SYSTEM_INSTRUCTION = """你是一个知识库问答助手。你的任务是：
-1. 根据用户提出的问题，确定合适的关键词；
-2. 调用工具（如 search_document_db、search_personal_db、search_guideline_db）搜索相应的知识库；
-3. 可以多次使用不同关键词不断检索，直到找到答案或明确无法找到信息；
-4. 对用户的问题进行准确、清晰的回答；
-5. 回答中可以说明你检索了哪些数据库和关键词，但不要暴露工具内部实现；
-6. 当生成的回答内容包含参考文献或数据来源时，务必在文中对应位置添加类似[^1]格式的参考链接，确保引用明确。
-如果用户的问题超出知识库或工具范围，就礼貌告知无法处理该类型问题。
-"""
-
     FORMAT_INSTRUCTION = (
         "如果处理过程中发生错误，请将 status 设置为 'error'；\n"
         "如果请求成功完成，请将 status 设置为 'completed'。"
     )
-    def __init__(self, mcp_config=None):
+    def __init__(self, mcp_config=None, select_tool_names=["search_document_db", "search_personal_db", "search_guideline_db"]):
+        """
+        初始化Agent
+        Args:
+            mcp_config: mcp工具
+            select_tool_names: 内置的可选工具
+        """
         self.model = create_model()
         self.mcp_config = mcp_config
-        self.tools = [search_document_db, search_personal_db, search_guideline_db]
+        select_tools = []
+        for tool_name in select_tool_names:
+            if tool_name in ["search_document_db", "search_personal_db", "search_guideline_db"]:
+                select_tools.append(eval(tool_name))
+            else:
+                select_tools.append(tool_name)
+        self.tools = select_tools
         self.graph = None  # 等异步初始化完才赋值
+        tool_names = '、'.join(select_tool_names)
+        self.SYSTEM_INSTRUCTION = f"""你是一个知识库问答助手。你的任务是：
+        1. 根据用户提出的问题，确定合适的关键词；
+        2. 调用工具（如 {tool_names}）搜索相应的知识库；
+        3. 可以多次使用不同关键词不断检索，直到找到答案或明确无法找到信息；
+        4. 对用户的问题进行准确、清晰的回答；
+        5. 回答中可以说明你检索了哪些数据库和关键词，但不要暴露工具内部实现；
+        6. 当生成的回答内容包含参考文献或数据来源时，务必在文中对应位置添加类似[^1]格式的参考链接，确保引用明确。
+        如果用户的问题超出知识库或工具范围，就礼貌告知无法处理该类型问题。
+        """
 
     async def ainit(self):
         if self.mcp_config and os.path.exists(self.mcp_config):

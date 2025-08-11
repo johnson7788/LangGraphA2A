@@ -22,7 +22,7 @@ load_dotenv()
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-async def start_server(host, port, mcp_config):
+async def start_server(host, port, mcp_config, select_tool_names):
     capabilities = AgentCapabilities(streaming=True)
     skill = AgentSkill(
         id='knowledge_search',
@@ -43,7 +43,7 @@ async def start_server(host, port, mcp_config):
         skills=[skill],
     )
     # 启动服务
-    agent_executor = KnowledgeAgentExecutor(mcp_config)
+    agent_executor = KnowledgeAgentExecutor(mcp_config, select_tool_names)
     request_handler = DefaultRequestHandler(
         agent_executor=agent_executor,
         task_store=InMemoryTaskStore(),
@@ -61,8 +61,9 @@ async def start_server(host, port, mcp_config):
 @click.option('--host', default='localhost')
 @click.option('--port', default=10000)
 @click.option('--mcp', default="mcp_config.json", help='MCP 配置文件路径')
-def main(host, port, mcp):
-    asyncio.run(start_server(host, port, mcp))
+@click.option('--select_tool_names', default=["search_document_db", "search_personal_db", "search_guideline_db"], help='使用的内部工具')
+def main(host, port, mcp, select_tool_names):
+    asyncio.run(start_server(host, port, mcp, select_tool_names))
 
 if __name__ == '__main__':
     main()
