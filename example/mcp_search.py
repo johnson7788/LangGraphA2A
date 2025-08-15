@@ -66,58 +66,6 @@ def search_document_db(query: str, max_results: int = 3):
     ]
     return results[:max_results]
 
-@mcp.tool()
-def search_guideline_db(query: str, max_results: int = 3):
-    """
-    模拟搜索指南库：包括推荐内容、content 字段详实说明建议依据与适应症。
-    Args:
-        query (str): 搜索查询关键词
-        max_results (int, optional): 最大返回结果数量，默认为3
-    Returns:
-        list: 包含指南信息的字典列表，每个字典包含title, snippet, content, source, timestamp字段
-    """
-    print(f"search_guideline_db, {query}")
-    results = [
-        {
-            "title": "MDS 2025：治疗运动波动的循证综述",
-            "snippet": "官方推荐多种药物与手术选项用于改善 levodopa 相关起伏。",
-            "content": (
-                "2025 年 5 月 MDS 更新基于 Cochrane 与 GRADE 方法，对 levodopa 延释剂、"
-                "pramipexole（速释与长效）、ropinirole、rotigotine、opicapone、"
-                "safinamide、双侧 STN DBS 等评为“有效”；连续肠道 levodopa 输注、"
-                "皮下 apomorphine、rasagiline、istradefylline、amantadine 延释剂、"
-                "Zonisamide、GPI DBS 等评为“可能有效”用于 motor fluctuations。"
-            ),
-            "source": "Movement Disorders (MDS EBM Review)",
-            "timestamp": "2025‑05"
-        },
-        {
-            "title": "FDA 批准 adaptive DBS（闭环深部脑刺激，aDBS）",
-            "snippet": "首个可根据脑电信号自动调节的 DBS 系统获 FDA 批准。",
-            "content": (
-                "美国 FDA 于 2025 年批准 Medtronic 的 BrainSense Adaptive aDBS 系统，"
-                "这种闭环设备可持续监测桥臂核的异常脑电信号，并即时调节电刺激，"
-                "相比传统 DBS 可减少 40% 电能用量，改善 tremor 与肌肉僵硬，"
-                "并支持算法切换以优化响应并降低副作用。"
-            ),
-            "source": "UCSF 公告 / Medical News",
-            "timestamp": "2025‑02"
-        },
-        {
-            "title": "Onapgo 药物输注治疗 motor fluctuations",
-            "snippet": "FDA 批准皮下输注 apomorphine，用于显著 “off” 时间的患者。",
-            "content": (
-                "2025 年 2 月 FDA 批准 Onapgo（apomorphine HCl）连续皮下注射输注疗法，"
-                "适用于经历明显 motor fluctuations 或 off-time 的帕金森患者。"
-                "输注系统可持续提供较稳定的血药浓度，迅速缓解 tremor 与运动迟缓，"
-                "成为 levodopa 波动管理的重要补充治疗手段。"
-            ),
-            "source": "Michael J. Fox 基金会新闻",
-            "timestamp": "2025‑02‑04"
-        },
-    ]
-    return results[:max_results]
-
 if __name__ == "__main__":
     mcp.run(transport="sse")
     # mcp.run(transport="streamable-http")

@@ -374,3 +374,9 @@ channel.queue_declare(queue=QUEUE_NAME_READ, durable=True)
 * `channel.queue_declare(..., durable=True)` → 队列重启不丢
 * `delivery_mode=2` → 消息重启不丢
   **两者配合**才能实现 RabbitMQ “断电重启消息依然存在”。
+
+
+
+# Langgraph中的state_schema
+在 LangGraph 里，state_schema 的作用是定义 Agent 在运行过程中的“状态结构”，包括你想要在多轮推理中保存、更新、传递的变量类型和合并逻辑。
+默认情况下，create_react_agent 会用内置的 AgentState，它里头已经有一个基础的 messages（对话历史）和 llm_input_messages（传给 LLM 的裁剪消息）等字段。

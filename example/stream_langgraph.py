@@ -41,8 +41,10 @@ if __name__ == '__main__':
     inputs = {"messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]}
     print("【流式响应开始】")
     for token, metadata in agent.stream(inputs, stream_mode="messages"):
-        print(token)
-        print(metadata)
+        # print(token)
+        token_content = token.content
+        print(token_content, end="")
+        # print(metadata)
     print("\n【流式响应结束】")
 
 

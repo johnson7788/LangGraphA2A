@@ -111,3 +111,6 @@ npm run start
 * LLM Thinking 返回
 * Plan 模式 
 * 改造 https://github.com/google-gemini/gemini-fullstack-langgraph-quickstart  也为A2A形式
+
+## 🤝Wechat
+![weichat.png](doc%2Fweichat.png)
