@@ -209,10 +209,10 @@ function App() {
                         console.error('Error parsing tool/reference data:', e);
                       }
                       break;
-                    case 6: // metadata
+                    case 6: // 参考引用
                       console.log(`Received data type 6:`, JSON.parse(data.message));
                       break;
-                    case 7: // entities
+                    case 7: // 实体识别结果
                       try {
                         const entityData = JSON.parse(data.message);
                         if (entityData.diseases && Array.isArray(entityData.diseases)) {

@@ -29,6 +29,7 @@ export interface ThoughtStep {
   name?: string;
   globalization?: string;
   status?: 'Working' | 'Done';
+  func_output?: string;
 }
 
 export interface EntityResult {

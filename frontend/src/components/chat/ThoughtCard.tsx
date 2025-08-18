@@ -95,6 +95,17 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
           <div className="text-sm text-gray-700 leading-relaxed bg-white p-3 rounded-lg border border-current border-opacity-20">
             {thought.content}
           </div>
+
+          {thought.func_output && (
+            <div className="space-y-2">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Tool Output
+              </div>
+              <pre className="text-xs text-gray-700 leading-relaxed bg-white p-3 rounded-lg border border-current border-opacity-20 whitespace-pre-wrap break-all">
+                {thought.func_output}
+              </pre>
+            </div>
+          )}
           
           {thought.references && thought.references.length > 0 && (
             <div className="space-y-2">
