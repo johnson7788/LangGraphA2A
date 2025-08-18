@@ -37,3 +37,6 @@
 
 ## 加载本地的mcp_config.json
 [mcp_load_config_langgraph.py](mcp_load_config_langgraph.py)
+
+## 由开发者注入的参数（不经过 LLM)，即LLM不可见工具的部分参数
+[invoke_inject_tool_arg.py](invoke_inject_tool_arg.py)

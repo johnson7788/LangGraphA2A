@@ -380,3 +380,29 @@ channel.queue_declare(queue=QUEUE_NAME_READ, durable=True)
 # Langgraph中的state_schema
 在 LangGraph 里，state_schema 的作用是定义 Agent 在运行过程中的“状态结构”，包括你想要在多轮推理中保存、更新、传递的变量类型和合并逻辑。
 默认情况下，create_react_agent 会用内置的 AgentState，它里头已经有一个基础的 messages（对话历史）和 llm_input_messages（传给 LLM 的裁剪消息）等字段。
+
+
+# InjectedToolArg 隐藏某些参数，表示这些参数将在运行时注入，不应由模型生成，还有问题，不能用https://github.com/langchain-ai/langchain/discussions/24906
+https://python.langchain.com/docs/how_to/tool_runtime/?utm_source=chatgpt.com
+```
+# 示例代码
+from typing import List
+
+from langchain_core.tools import InjectedToolArg, tool
+from typing_extensions import Annotated
+
+user_to_pets = {}
+
+
+@tool(parse_docstring=True)
+def update_favorite_pets(
+    pets: List[str], user_id: Annotated[str, InjectedToolArg]
+) -> None:
+    """Add the list of favorite pets.
+
+    Args:
+        pets: List of favorite pets to set.
+        user_id: User's ID.
+    """
+    user_to_pets[user_id] = pets
+```
