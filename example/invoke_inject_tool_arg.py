@@ -8,6 +8,7 @@
 
 import dotenv
 import os
+from typing import Annotated, NotRequired
 from langchain_core.tools import InjectedToolArg
 from typing_extensions import Annotated
 from langgraph.prebuilt import create_react_agent
@@ -22,7 +23,7 @@ import langchain_core
 dotenv.load_dotenv()
 
 class CustomState(AgentState):
-    user_name: str
+    user_name: NotRequired[str]
 # 定义一个工具：除了 query (LLM决定) 还要 user_id (系统注入)
 @tool
 def web_search(query: str, state: Annotated[dict, InjectedState]) -> str:
@@ -33,7 +34,7 @@ def web_search(query: str, state: Annotated[dict, InjectedState]) -> str:
         query: 搜索的内容（LLM 生成）。
         tool_runtime: 系统注入的用户 ID。
     """
-    user_name = state["user_name"]
+    user_name = state.get("user_name", "unknown")
     print(f"Web Search, 参数query: {query}, user_name: {user_name}")
     return f"搜索结果: LangGraph 核心技术概念 ..."
 
@@ -55,10 +56,16 @@ agent = create_react_agent(
 
 if __name__ == '__main__':
     # 给LLM输入 & 给系统注入参数
+    # 用户名这个参数可选可不选, 这个是传入
     inputs = {
         "messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")],
         "user_name": "Bobby",
     }
+    #
+    # 用户名这个参数可选可不选，不传入
+    # inputs = {
+    #     "messages": [HumanMessage(content="你好啊，介绍下什么是LangGraph")]
+    # }
     result_state = agent.invoke(inputs)
     new_messages = result_state["messages"]  # 包含工具调用、AI 回复等
     for m in new_messages:
