@@ -26,11 +26,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages }) => {
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-600 mb-2">
-              Start a Medical Conversation
+              开始对话吧
             </h3>
             <p className="text-gray-500 max-w-sm mx-auto">
-              Ask questions about diseases, symptoms, medications, or medical procedures. 
-              The AI will search through selected data sources and provide evidence-based answers.
+              发送消息开始与Agent对话。你可以询问问题、获取建议或进行任何你想要的交流。
             </p>
           </div>
         ) : (

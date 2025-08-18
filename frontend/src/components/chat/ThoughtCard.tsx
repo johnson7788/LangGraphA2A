@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronRight, PenTool as Tool, Brain, Search, Lightbulb, ExternalLink } from 'lucide-react';
+import { ChevronRight, PenTool as Tool, Brain, Search, Lightbulb, ExternalLink, Loader, CheckCircle } from 'lucide-react';
 import { ThoughtStep } from '../../types';
 
 interface ThoughtCardProps {
@@ -15,10 +15,12 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
 }) => {
   const [expanded, setExpanded] = useState(isExpanded);
 
-  const getIcon = (type: ThoughtStep['type']) => {
+  const getIcon = (type: ThoughtStep['type'], status?: ThoughtStep['status']) => {
     switch (type) {
-      case 'tool_use':
-        return <Tool className="w-4 h-4" />;
+      case 'tool':
+        return status === 'Done' 
+          ? <CheckCircle className="w-4 h-4 text-emerald-600" /> 
+          : <Loader className="w-4 h-4 animate-spin text-emerald-600" />;
       case 'reasoning':
         return <Brain className="w-4 h-4" />;
       case 'query':
@@ -30,10 +32,11 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
     }
   };
 
-  const getTypeLabel = (type: ThoughtStep['type']) => {
+  const getTypeLabel = (type: ThoughtStep['type'], name?: string) => {
+    if (type === 'tool') {
+      return name || 'Tool';
+    }
     switch (type) {
-      case 'tool_use':
-        return 'Tool Usage';
       case 'reasoning':
         return 'Reasoning';
       case 'query':
@@ -47,7 +50,7 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
 
   const getTypeColor = (type: ThoughtStep['type']) => {
     switch (type) {
-      case 'tool_use':
+      case 'tool':
         return 'text-emerald-600 bg-emerald-50 border-emerald-200';
       case 'reasoning':
         return 'text-blue-600 bg-blue-50 border-blue-200';
@@ -71,11 +74,13 @@ export const ThoughtCard: React.FC<ThoughtCardProps> = ({
         </div>
         
         <div className="flex items-center gap-2 flex-1">
-          {getIcon(thought.type)}
+          {getIcon(thought.type, thought.status)}
           <span className="font-medium text-sm">
-            {getTypeLabel(thought.type)}
-            {thought.tool && ` - ${thought.tool}`}
+            {getTypeLabel(thought.type, thought.name)}
           </span>
+          {thought.globalization && (
+            <span className="text-xs px-2 py-0.5 bg-gray-200 text-gray-600 rounded-full">{thought.globalization}</span>
+          )}
         </div>
         
         <ChevronRight 

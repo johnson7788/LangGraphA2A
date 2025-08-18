@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Plus, Menu, X, MessageSquare } from 'lucide-react';
 import { ChatWindow } from './components/chat/ChatWindow';
 import { ChatInputBox } from './components/chat/ChatInputBox';
@@ -8,25 +8,70 @@ import { Button } from './components/common/Button';
 import { DataSource, MCPConfig, Message, Conversation, ThoughtStep, EntityResult, Reference } from './types';
 
 function App() {
+  const [userId] = useState(() => Math.random().toString(36).substring(2));
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [loading, setLoading] = useState(false);
   
-  // Mock data
-  const [dataSources] = useState<DataSource[]>([
-    { id: '1', name: 'Disease Database', description: 'Comprehensive disease information', type: 'database' },
-    { id: '2', name: 'Medical Literature', description: 'PubMed and medical journals', type: 'literature' },
-    { id: '3', name: 'Drug Information', description: 'Pharmacological database', type: 'database' },
-    { id: '4', name: 'User Knowledge Base', description: 'Custom medical knowledge', type: 'knowledge_base' }
-  ]);
+  const [dataSources, setDataSources] = useState<DataSource[]>([]);
+
+  useEffect(() => {
+    const fetchDataSource = async () => {
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:9800";
+        const response = await fetch(`${backendUrl}/get_data_source`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        setDataSources(data);
+      } catch (e) {
+        console.error("Fetch data source error: ", e);
+      }
+    };
+    fetchDataSource();
+  }, []);
+
 
   const [mcpConfigs, setMCPConfigs] = useState<MCPConfig[]>([
-    { id: '1', name: 'Medical Entity Extraction', description: 'Extract drugs, diseases, symptoms', enabled: true },
-    { id: '2', name: 'Literature Search', description: 'Search medical literature', enabled: true },
+    { id: '1', name: 'Medical Entity Extraction', description: 'Extract drugs, diseases, symptoms', enabled: false },
+    { id: '2', name: 'Literature Search', description: 'Search medical literature', enabled: false },
     { id: '3', name: 'Drug Interaction Checker', description: 'Check for drug interactions', enabled: false }
   ]);
 
-  const [selectedSources, setSelectedSources] = useState<string[]>(['1', '2']);
+  const [selectedSources, setSelectedSources] = useState<string[]>(["search_document_db","search_personal_db","search_guideline_db"]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [customMcpUrl, setCustomMcpUrl] = useState('');
+  const [validationStatus, setValidationStatus] = useState<{ status: 'idle' | 'validating' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
+  const [customMcpTools, setCustomMcpTools] = useState<any[]>([]);
+
+  const handleValidateMcp = useCallback(async () => {
+    if (!customMcpUrl) {
+      setValidationStatus({ status: 'error', message: 'URL cannot be empty.' });
+      setCustomMcpTools([]);
+      return;
+    }
+    setValidationStatus({ status: 'validating', message: 'Validating...' });
+    setCustomMcpTools([]);
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:9800";
+      const response = await fetch(`${backendUrl}/validate_mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url: customMcpUrl }),
+      });
+      const data = await response.json();
+      if (data.status === 'ok') {
+        setValidationStatus({ status: 'success', message: data.message });
+        setCustomMcpTools(data.tools || []);
+      } else {
+        setValidationStatus({ status: 'error', message: data.message });
+      }
+    } catch (error) {
+      setValidationStatus({ status: 'error', message: 'Failed to connect to the validation server.' });
+    }
+  }, [customMcpUrl]);
 
   const handleMCPConfigChange = useCallback((configId: string, enabled: boolean) => {
     setMCPConfigs(configs => 
@@ -48,77 +93,135 @@ function App() {
       timestamp: new Date()
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages: Message[] = [...messages, userMessage];
+    setMessages(newMessages);
     setLoading(true);
 
-    // Simulate agent processing
-    setTimeout(() => {
-      const mockThoughts: ThoughtStep[] = [
-        {
-          id: '1',
-          type: 'query',
-          content: 'Searching selected data sources for information about the user\'s question...',
-          timestamp: new Date(),
-          references: [
-            { id: '1', source: 'Database', title: 'Medical Knowledge Base Query', snippet: 'Found relevant entries' }
-          ]
-        },
-        {
-          id: '2',
-          type: 'reasoning',
-          content: 'Analyzing the retrieved information and cross-referencing with multiple sources to ensure accuracy.',
-          timestamp: new Date()
-        },
-        {
-          id: '3',
-          type: 'synthesis',
-          content: 'Synthesizing information from multiple sources to provide a comprehensive answer.',
-          timestamp: new Date()
-        }
-      ];
+    const agentMessageId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id: agentMessageId,
+      type: 'agent',
+      content: '',
+      timestamp: new Date(),
+      streaming: true,
+      thoughts: [],
+      references: [],
+      entities: [],
+    }]);
 
-      const mockEntities: EntityResult[] = [
-        {
-          id: '1',
-          type: 'drug',
-          name: 'Aspirin',
-          description: 'A medication used to reduce pain, fever, or inflammation.',
-          properties: {
-            'Generic Name': 'Acetylsalicylic acid',
-            'Drug Class': 'NSAIDs',
-            'Common Uses': ['Pain relief', 'Fever reduction', 'Anti-inflammatory']
+    try {
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:9800";
+      const response = await fetch(`${backendUrl}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'text/event-stream',
+        },
+        body: JSON.stringify({
+          userId: userId, 
+          messages: newMessages.map(m => ({ role: m.type === 'agent' ? 'ai' : 'user', content: m.content })),
+          attachment: {
+            tools: selectedSources,
           },
-          references: [
-            { id: '1', source: 'Drug Database', title: 'Aspirin Monograph' }
-          ]
+        }),
+      });
+
+      if (!response.body) throw new Error("No response body");
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      
+      let buffer = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+          break;
         }
-      ];
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
 
-      const mockReferences: Reference[] = [
-        { id: '1', source: 'Wiki', title: 'Medical Wikipedia Entry' },
-        { id: '2', source: 'Database', title: 'Clinical Database Match' },
-        { id: '3', source: 'Literature', title: 'Recent Research Study' }
-      ];
-
-      const agentMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        type: 'agent',
-        content: `Based on the selected data sources, I can provide you with comprehensive information about your medical question. The analysis shows relevant clinical data and evidence-based recommendations.
-
-This response incorporates information from multiple verified medical sources including peer-reviewed literature, clinical databases, and established medical knowledge bases to ensure accuracy and reliability.
-
-The information provided should be used for educational purposes and does not replace professional medical advice. Always consult with qualified healthcare professionals for medical decisions.`,
-        thoughts: mockThoughts,
-        references: mockReferences,
-        entities: content.toLowerCase().includes('aspirin') ? mockEntities : undefined,
-        timestamp: new Date(),
-        streaming: true
-      };
-
-      setMessages(prev => [...prev, agentMessage]);
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const jsonStr = line.substring(5).trim();
+            if (jsonStr.includes('[stop]')) continue;
+            
+            try {
+              const data = JSON.parse(jsonStr);
+              setMessages(prev => prev.map(msg => {
+                if (msg.id === agentMessageId) {
+                  const newMsg = { ...msg };
+                  switch (data.type) {
+                    case 4: // text
+                      newMsg.content += data.message;
+                      break;
+                    // Other types can be handled here in the future
+                    case 5: // tool status
+                      try {
+                        const toolData = JSON.parse(data.message);
+                        if (Array.isArray(toolData)) {
+                          newMsg.thoughts = newMsg.thoughts ? [...newMsg.thoughts] : [];
+                          toolData.forEach(tool => {
+                            const existingThoughtIndex = newMsg.thoughts.findIndex(t => t.id === tool.id);
+                            if (existingThoughtIndex > -1) {
+                              // Update existing thought
+                              newMsg.thoughts[existingThoughtIndex] = {
+                                ...newMsg.thoughts[existingThoughtIndex],
+                                content: tool.display,
+                                status: tool.status,
+                              };
+                            } else {
+                              // Add new thought
+                              newMsg.thoughts.push({
+                                id: tool.id,
+                                type: 'tool',
+                                content: tool.display,
+                                timestamp: new Date(),
+                                name: tool.name,
+                                globalization: tool.globalization,
+                                status: tool.status,
+                              });
+                            }
+                          });
+                        }
+                      } catch (e) {
+                        console.error('Error parsing tool data:', e);
+                      }
+                      break;
+                    case 6: // metadata/references
+                    case 7: // entities
+                      console.log(`Received data type ${data.type}:`, JSON.parse(data.message));
+                      break;
+                  }
+                  return newMsg;
+                } 
+                return msg;
+              }));
+            } catch (e) {
+              // This might be a malformed JSON or a non-JSON message part
+              console.error('Error parsing SSE data chunk:', jsonStr, e);
+            }
+          } else if (line.startsWith('event: end')) {
+            return;
+          }
+        } 
+      }
+    } catch (error) {
+      console.error('Chat request failed:', error);
+      setMessages(prev => prev.map(msg => 
+        msg.id === agentMessageId 
+          ? { ...msg, content: 'An error occurred. Please try again.', streaming: false }
+          : msg
+      ));
+    } finally {
       setLoading(false);
-    }, 2000);
-  }, []);
+      setMessages(prev => prev.map(msg => 
+        msg.id === agentMessageId 
+          ? { ...msg, streaming: false }
+          : msg
+      ));
+    }
+  }, [messages, selectedSources]);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -131,7 +234,7 @@ The information provided should be used for educational purposes and does not re
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-0 ${ 
         sidebarOpen ? 'translate-x-0' : '-translate-x-full'
       }`}>
         <div className="flex flex-col h-full">
@@ -170,6 +273,37 @@ The information provided should be used for educational purposes and does not re
               selectedSources={selectedSources}
               onSelectionChange={setSelectedSources}
             />
+
+            <div className="space-y-2">
+              <h3 className="text-sm font-medium text-gray-900">Add Custom MCP</h3>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={customMcpUrl}
+                  onChange={(e) => setCustomMcpUrl(e.target.value)}
+                  placeholder="Enter MCP SSE URL"
+                  className="w-full px-3 py-2 text-sm text-gray-900 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <Button onClick={handleValidateMcp} disabled={validationStatus.status === 'validating'}>
+                  {validationStatus.status === 'validating' ? 'Validating...' : 'Validate'}
+                </Button>
+              </div>
+              {validationStatus.message && (
+                <p className={`text-sm ${validationStatus.status === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+                  {validationStatus.message}
+                </p>
+              )}
+              {validationStatus.status === 'success' && customMcpTools.length > 0 && (
+                <div className="mt-2 p-2 border rounded-md bg-gray-50">
+                  <h4 className="text-xs font-semibold text-gray-700">Available Tools:</h4>
+                  <ul className="mt-1 text-xs text-gray-600 list-disc list-inside">
+                    {customMcpTools.map((tool: any) => (
+                      <li key={tool.name}>{tool.name}: {tool.description}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
 
             <MCPConfigPanel
               configs={mcpConfigs}

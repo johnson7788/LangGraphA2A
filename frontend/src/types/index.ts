@@ -22,11 +22,13 @@ export interface Reference {
 
 export interface ThoughtStep {
   id: string;
-  type: 'tool_use' | 'reasoning' | 'query' | 'synthesis';
+  type: 'query' | 'reasoning' | 'synthesis' | 'tool';
   content: string;
-  tool?: string;
-  references?: Reference[];
   timestamp: Date;
+  references?: Reference[];
+  name?: string;
+  globalization?: string;
+  status?: 'Working' | 'Done';
 }
 
 export interface EntityResult {

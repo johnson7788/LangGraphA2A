@@ -9,39 +9,7 @@ interface AgentMessageProps {
 }
 
 export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
-  const [displayedContent, setDisplayedContent] = useState('');
   const [showThoughts, setShowThoughts] = useState(false);
-  const [currentThoughtIndex, setCurrentThoughtIndex] = useState(0);
-
-  // Simulate streaming text effect
-  useEffect(() => {
-    if (message.streaming) {
-      let index = 0;
-      const interval = setInterval(() => {
-        if (index < message.content.length) {
-          setDisplayedContent(message.content.slice(0, index + 1));
-          index++;
-        } else {
-          clearInterval(interval);
-        }
-      }, 20);
-      return () => clearInterval(interval);
-    } else {
-      setDisplayedContent(message.content);
-    }
-  }, [message.content, message.streaming]);
-
-  // Simulate thought process streaming
-  useEffect(() => {
-    if (message.thoughts && message.thoughts.length > 0) {
-      const timer = setTimeout(() => {
-        if (currentThoughtIndex < message.thoughts.length - 1) {
-          setCurrentThoughtIndex(currentThoughtIndex + 1);
-        }
-      }, 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [currentThoughtIndex, message.thoughts]);
 
   const getReferenceBadgeColor = (source: string) => {
     const colors = {
@@ -79,7 +47,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
             
             {showThoughts && (
               <div className="space-y-3 pl-4 border-l-2 border-gray-200">
-                {message.thoughts.slice(0, currentThoughtIndex + 1).map((thought, index) => (
+                {message.thoughts.map((thought, index) => (
                   <ThoughtCard
                     key={thought.id}
                     thought={thought}
@@ -95,7 +63,7 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
         {/* Main Response */}
         <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
           <div className="prose max-w-none text-gray-800 leading-relaxed">
-            {displayedContent}
+            {message.content}
             {message.streaming && (
               <span className="inline-block w-1 h-4 bg-blue-500 ml-1 animate-pulse" />
             )}
