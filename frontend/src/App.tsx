@@ -43,6 +43,7 @@ function App() {
   const [customMcpUrl, setCustomMcpUrl] = useState('');
   const [validationStatus, setValidationStatus] = useState<{ status: 'idle' | 'validating' | 'success' | 'error'; message: string }>({ status: 'idle', message: '' });
   const [customMcpTools, setCustomMcpTools] = useState<any[]>([]);
+  const [researchData, setResearchData] = useState<any[]>([]);
 
   const handleValidateMcp = useCallback(async () => {
     if (!customMcpUrl) {
@@ -83,6 +84,7 @@ function App() {
 
   const handleNewConversation = useCallback(() => {
     setMessages([]);
+    setResearchData([]);
   }, []);
 
   const handleSendMessage = useCallback(async (content: string) => {
@@ -209,10 +211,33 @@ function App() {
                         console.error('Error parsing tool/reference data:', e);
                       }
                       break;
-                    case 6: // 参考引用
-                      console.log(`Received data type 6:`, JSON.parse(data.message));
+                    case 6: // References for sidebar
+                      try {
+                        const newReferences = JSON.parse(data.message);
+                        if (Array.isArray(newReferences)) {
+                          setResearchData(prevData => {
+                            const newData = [...prevData];
+                            newReferences.forEach(newSource => {
+                              const existingSource = newData.find(s => s.name === newSource.name);
+                              if (existingSource) {
+                                // Merge data, avoiding duplicates
+                                newSource.data.forEach((newItem: any) => {
+                                  if (!existingSource.data.some((oldItem: any) => oldItem.id === newItem.id)) {
+                                    existingSource.data.push(newItem);
+                                  }
+                                });
+                              } else {
+                                newData.push(newSource);
+                              }
+                            });
+                            return newData;
+                          });
+                        }
+                      } catch (e) {
+                        console.error('Error parsing reference data for sidebar:', e);
+                      }
                       break;
-                    case 7: // 实体识别结果
+                    case 7: // entities
                       try {
                         const entityData = JSON.parse(data.message);
                         if (entityData.diseases && Array.isArray(entityData.diseases)) {
@@ -369,15 +394,26 @@ function App() {
           </div>
         </div>
 
-        {/* Chat Area */}
-        <ChatWindow messages={messages} />
+        {/* Main Content and Right Sidebar */}
+        <div className="flex-1 flex">
+          {/* Main Chat Area */}
+          <div className="flex-1 flex flex-col">
+            <ChatWindow messages={messages} />
+            <ChatInputBox
+              onSendMessage={handleSendMessage}
+              loading={loading}
+              disabled={selectedSources.length === 0}
+            />
+          </div>
 
-        {/* Input Area */}
-        <ChatInputBox
-          onSendMessage={handleSendMessage}
-          loading={loading}
-          disabled={selectedSources.length === 0}
-        />
+          {/* Right Sidebar for Research */}
+          {researchData && researchData.length > 0 && (
+            <div className="w-96 border-l border-gray-200 bg-white p-4 overflow-y-auto">
+              <h2 className="text-lg font-semibold text-gray-900 mb-4">Research</h2>
+              <ResearchDisplay data={researchData} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

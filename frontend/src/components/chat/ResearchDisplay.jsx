@@ -9,7 +9,7 @@ const ResearchDisplay = ({ data }) => {
   // Assuming each item in toolResults.data represents a different tab/library
   const tabs = data.map((item) => ({
     name: item.name,
-    data: item.data.data, // Assuming 'data' within 'data' holds the list of research papers
+    data: item.data, // Assuming 'data' holds the list of research papers
   }));
 
   return (
