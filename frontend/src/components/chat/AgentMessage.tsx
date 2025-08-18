@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Bot, ExternalLink, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { Bot, ChevronDown } from 'lucide-react';
 import { Message } from '../../types';
 import { ThoughtCard } from './ThoughtCard';
 import { EntityLinkedBlock } from './EntityLinkedBlock';
+import References from './References';
 
 interface AgentMessageProps {
   message: Message;
@@ -10,16 +11,6 @@ interface AgentMessageProps {
 
 export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
   const [showThoughts, setShowThoughts] = useState(false);
-
-  const getReferenceBadgeColor = (source: string) => {
-    const colors = {
-      'Wiki': 'bg-blue-100 text-blue-800',
-      'Database': 'bg-green-100 text-green-800',
-      'Literature': 'bg-purple-100 text-purple-800',
-      'Knowledge Base': 'bg-orange-100 text-orange-800',
-    };
-    return colors[source as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
 
   return (
     <div className="flex gap-4 mb-6 animate-fade-in">
@@ -68,27 +59,12 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
               <span className="inline-block w-1 h-4 bg-blue-500 ml-1 animate-pulse" />
             )}
           </div>
-          
-          {/* References */}
-          {message.references && message.references.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-gray-100">
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                References
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {message.references.map((ref, index) => (
-                  <span
-                    key={ref.id}
-                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getReferenceBadgeColor(ref.source)}`}
-                  >
-                    [{ref.source}]
-                    {ref.url && <ExternalLink className="w-3 h-3" />}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
         </div>
+
+        {/* References Display */}
+        {message.references && message.references.length > 0 && (
+          <References references={message.references} />
+        )}
 
         {/* Entity Results */}
         {message.entities && message.entities.length > 0 && (

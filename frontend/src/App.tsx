@@ -152,45 +152,81 @@ function App() {
                 if (msg.id === agentMessageId) {
                   const newMsg = { ...msg };
                   switch (data.type) {
-                    case 4: // text
-                      newMsg.content += data.message;
-                      break;
-                    // Other types can be handled here in the future
-                    case 5: // tool status
+                    case 4: // text or entity data
                       try {
-                        const toolData = JSON.parse(data.message);
-                        if (Array.isArray(toolData)) {
-                          newMsg.thoughts = newMsg.thoughts ? [...newMsg.thoughts] : [];
-                          toolData.forEach(tool => {
-                            const existingThoughtIndex = newMsg.thoughts.findIndex(t => t.id === tool.id);
-                            if (existingThoughtIndex > -1) {
-                              // Update existing thought
-                              newMsg.thoughts[existingThoughtIndex] = {
-                                ...newMsg.thoughts[existingThoughtIndex],
-                                content: tool.display,
-                                status: tool.status,
-                              };
-                            } else {
-                              // Add new thought
-                              newMsg.thoughts.push({
-                                id: tool.id,
-                                type: 'tool',
-                                content: tool.display,
-                                timestamp: new Date(),
-                                name: tool.name,
-                                globalization: tool.globalization,
-                                status: tool.status,
-                              });
-                            }
-                          });
+                        const potentialJson = JSON.parse(data.message);
+                        // Check if this is entity data
+                        if (potentialJson.diseases && Array.isArray(potentialJson.diseases)) {
+                           newMsg.entities = potentialJson.diseases.map((d: any) => ({
+                            id: d.id.toString(),
+                            type: 'disease',
+                            name: d.disease_name,
+                            description: d.overview,
+                            properties: {},
+                          }));
+                        } else {
+                          // Not entity data, so treat as plain text that happens to be valid JSON
+                          newMsg.content += data.message;
                         }
                       } catch (e) {
-                        console.error('Error parsing tool data:', e);
+                        // Not a JSON object, so it's just text
+                        newMsg.content += data.message;
                       }
                       break;
-                    case 6: // metadata/references
+                    case 5: // tool status or references
+                      try {
+                        const toolData = JSON.parse(data.message);
+                        if (Array.isArray(toolData) && toolData.length > 0) {
+                          if (toolData[0].data && Array.isArray(toolData[0].data)) {
+                            newMsg.references = toolData;
+                          } else {
+                            newMsg.thoughts = newMsg.thoughts ? [...newMsg.thoughts] : [];
+                            toolData.forEach(tool => {
+                              const existingThoughtIndex = newMsg.thoughts.findIndex(t => t.id === tool.id);
+                              if (existingThoughtIndex > -1) {
+                                newMsg.thoughts[existingThoughtIndex] = {
+                                  ...newMsg.thoughts[existingThoughtIndex],
+                                  content: tool.display,
+                                  status: tool.status,
+                                  func_output: tool.func_output,
+                                };
+                              } else {
+                                newMsg.thoughts.push({
+                                  id: tool.id,
+                                  type: 'tool',
+                                  content: tool.display,
+                                  timestamp: new Date(),
+                                  name: tool.name,
+                                  globalization: tool.globalization,
+                                  status: tool.status,
+                                  func_output: tool.func_output,
+                                });
+                              }
+                            });
+                          }
+                        }
+                      } catch (e) {
+                        console.error('Error parsing tool/reference data:', e);
+                      }
+                      break;
+                    case 6: // metadata
+                      console.log(`Received data type 6:`, JSON.parse(data.message));
+                      break;
                     case 7: // entities
-                      console.log(`Received data type ${data.type}:`, JSON.parse(data.message));
+                      try {
+                        const entityData = JSON.parse(data.message);
+                        if (entityData.diseases && Array.isArray(entityData.diseases)) {
+                          newMsg.entities = entityData.diseases.map((d: any) => ({
+                            id: d.id.toString(),
+                            type: 'disease',
+                            name: d.disease_name,
+                            description: d.overview,
+                            properties: {},
+                          }));
+                        }
+                      } catch (e) {
+                        console.error('Error parsing entity data:', e);
+                      }
                       break;
                   }
                   return newMsg;
