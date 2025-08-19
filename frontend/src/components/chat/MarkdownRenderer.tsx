@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -66,15 +65,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, ref
         });
     });
 
-    // Assuming citation IDs in markdown are 1-based indices into the flattened array of references.
-    return flatRefs.reduce((acc, ref, index) => {
-      acc[(index + 1).toString()] = ref;
+    return flatRefs.reduce((acc, ref) => {
+      acc[ref.id] = ref;
       return acc;
     }, {} as Record<string, ReferenceForMap>);
   }, [references]);
 
   const preprocessMarkdownWithRefs = (input: string) => {
-    return input.replace(/[\[\\]\\\^([^\\]+)\\]/g, (_, id: string) => {
+    return input.replace(/\[\^([^\]]+)\]/g, (_, id: string) => {
       if (!referenceMap[id]) return `[^${id}]`;
       return `<sup data-ref-id="${id}" class="ref-link text-blue-600 cursor-pointer font-medium">[${id}]</sup>`;
     });

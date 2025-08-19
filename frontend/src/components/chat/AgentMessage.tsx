@@ -62,9 +62,9 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
         </div>
 
         {/* References Display */}
-        {message.references && message.references.length > 0 && (
+        {/* {message.references && message.references.length > 0 && (
           <References references={message.references} />
-        )}
+        )} */}
 
         {/* Entity Results */}
         {message.entities && message.entities.length > 0 && (
