@@ -31,32 +31,39 @@ graph TD
         A[React 前端]
     end
 
-    subgraph 后端服务 (Docker Compose)
-        B(API Gateway)
-        C{RabbitMQ}
-        D(MQ Backend)
-        E(Knowledge Agent)
-        F(Personal DB)
-        G(Entity Identity)
+    subgraph "后端服务: Docker Compose"
+        B[API Gateway]
+        C[(RabbitMQ)]
+        D[MQ Backend]
+        E[Knowledge Agent]
+        F[(Personal DB)]
+        G[(Entity Identity)]
     end
     
-    subgraph 外部依赖
-        H(LLM)
-        I(External APIs)
+    subgraph "外部依赖"
+        H[(LLM)]
+        I[(External APIs)]
     end
 
+    %% 用户交互
     A -- HTTP/SSE --> B
-    B -- 任务发布 --> C
-    C -- 任务消费 --> D
-    D -- 调用Agent --> E
-    D -- 结果发布 --> C
-    C -- 结果消费 --> B
+
+    %% 消息流转
+    B -- 发布任务 --> C
+    C -- 分发任务 --> D
+    D -- 调用 --> E
     E -- 调用LLM --> H
-    E -- 调用工具 --> F
-    E -- 调用工具 --> G
-    E -- 调用工具 --> I
-    F -- 文件处理/向量化 --> F
-    G -- 实体识别 --> G
+    E -- 工具访问 --> F
+    E -- 工具访问 --> G
+    E -- 工具访问 --> I
+
+    %% 结果返回
+    D -- 发布结果 --> C
+    C -- 返回结果 --> B
+
+    %% 数据流说明
+    F -. 文件处理/向量化 .-> E
+    G -. 实体识别 .-> E
 ```
 
 - **Frontend**: React + Vite 构建的现代化用户界面，通过 SSE 实时渲染后端推送的各种事件。
