@@ -9,3 +9,5 @@ CLAUDE_API_KEY=sk-ant-
 DOUBAO_API_KEY=
 # HTTP_PROXY=http://127.0.0.1:7890
 # HTTPS_PROXY=http://127.0.0.1:7890
+LOCAL_API_BASE=http://localhost:6688
+PERSONENAL_DB=http://localhost:9900

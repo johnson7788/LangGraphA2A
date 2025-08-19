@@ -6,6 +6,11 @@ import pika
 import threading
 from uuid import uuid4
 from fastapi import FastAPI, Request, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from urllib.parse import urlparse
+from mcp import ClientSession
+from mcp.client.sse import sse_client
 from fastapi.concurrency import run_in_threadpool
 from sse_starlette.sse import EventSourceResponse
 from pika.exceptions import AMQPConnectionError
@@ -22,6 +27,14 @@ logger = logging.getLogger(__name__)
 # FastAPI app initialization
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # RabbitMQ Configuration from environment variables
 RABBITMQ_HOST = os.getenv("RABBITMQ_HOST", "localhost")
 RABBITMQ_PORT = int(os.getenv("RABBITMQ_PORT", 5672))
@@ -31,10 +44,13 @@ RABBITMQ_VIRTUAL_HOST = os.getenv("RABBITMQ_VIRTUAL_HOST", "/")
 # 从哪个队列中读取数据,写入到问题，从答案读取
 QUEUE_NAME_WRITER = os.getenv("QUEUE_NAME_WRITER", "question_queue")
 QUEUE_NAME_READ = os.getenv("QUEUE_NAME_READ", "answer_queue")
-logger.info(f"Connecting to RabbitMQ at {RABBITMQ_HOST}:{RABBITMQ_PORT}, user: {RABBITMQ_USERNAME}")
+logger.info(f"连接 RabbitMQ at {RABBITMQ_HOST}:{RABBITMQ_PORT}, user: {RABBITMQ_USERNAME}")
 
 # Thread-safe dictionary to store SSE queues for each session
 sse_queues = {}
+
+# session对应的mcp的工具
+sessions_tools = {}
 
 def get_rabbitmq_connection():
     """Creates and returns a new RabbitMQ connection."""
@@ -60,7 +76,7 @@ def listen_to_answer_queue():
             channel = connection.channel()
             channel.queue_declare(queue=QUEUE_NAME_READ, durable=True)
             
-            logger.info(f"Started listening to {QUEUE_NAME_READ}")
+            logger.info(f"开始监听队列： {QUEUE_NAME_READ}")
 
             for method_frame, properties, body in channel.consume(QUEUE_NAME_READ):
                 try:
@@ -70,15 +86,15 @@ def listen_to_answer_queue():
                         sse_queues[session_id].put_nowait(message)
                     channel.basic_ack(method_frame.delivery_tag)
                 except Exception as e:
-                    logger.error(f"Error processing message: {e}")
+                    logger.error(f"监听到错误的消息格式: {e}")
                     # It's safer to nack without requeue to avoid poison messages
                     channel.basic_nack(method_frame.delivery_tag, requeue=False)
 
         except (AMQPConnectionError, pika.exceptions.StreamLostError) as e:
-            logger.error(f"RabbitMQ connection error in listener: {e}. Reconnecting in 5 seconds...")
+            logger.error(f"RabbitMQ 连接错误: {e}.5秒后尝试重连...")
             time.sleep(5)
         except Exception as e:
-            logger.error(f"An unexpected error occurred in the listener thread: {e}")
+            logger.error(f"RabbitMQ发生错误异常: {e}")
             # Avoid busy-looping on unexpected errors
             time.sleep(10)
 
@@ -97,7 +113,7 @@ def publish_to_question_queue(session_id: str, final_body: str):
             )
         )
         connection.close()
-        logger.info(f"Sent message to {QUEUE_NAME_WRITER} for session {session_id}")
+        logger.info(f"发送消息成功到队列 {QUEUE_NAME_WRITER} 对于Session {session_id}")
     except AMQPConnectionError as e:
         # Re-raise to be caught in the endpoint
         raise e
@@ -111,6 +127,7 @@ async def startup_event():
 @app.post("/chat")
 async def chat_endpoint(request: Request):
     """
+    user_id作为session的id
     Receives a chat message, sends it to the question queue,
     and returns an SSE response to stream back answers.
     """
@@ -118,7 +135,10 @@ async def chat_endpoint(request: Request):
         data = await request.json()
         user_id = data.get("userId", "anonymous")
         messages = data.get("messages", [])
-        
+        #attachment存放工具的信息eg" {"tools": ["search_document_db", "search_personal_db"]}
+        attachment = data.get("attachment", {})
+        # 如果
+
         if not messages:
             raise HTTPException(status_code=400, detail="Messages list cannot be empty.")
 
@@ -131,8 +151,9 @@ async def chat_endpoint(request: Request):
     message_dict = {
         "sessionId": session_id,
         "userId": user_id,
-        "functionId": 1,  # As per mq_backend logic
-        "messages": messages
+        "functionId": 8,  # As per mq_backend logic
+        "messages": messages,
+        "attachment": attachment
     }
     
     # Double JSON serialization
@@ -147,12 +168,11 @@ async def chat_endpoint(request: Request):
 
     async def event_generator():
         """Generator function for SSE."""
-        # Create a queue for this specific request
         sse_queues[session_id] = asyncio.Queue()
         try:
             while True:
                 message = await sse_queues[session_id].get()
-                
+                logger.info(f"收到了SSE消息: {message}")
                 # If stop message is received, end the stream
                 if message.get("message") == "[stop]":
                     yield {"event": "end", "data": json.dumps({"sessionId": session_id})}
@@ -169,6 +189,60 @@ async def chat_endpoint(request: Request):
                 logger.info(f"Cleaned up queue for session {session_id}")
 
     return EventSourceResponse(event_generator())
+
+@app.get("/get_data_source")
+async def get_data_source(request: Request):
+    """
+    获取所有数据源
+    "search_document_db", "search_personal_db", search_guideline_db
+    """
+    return [
+        {
+            "id": "search_document_db",
+            "name": "search_document_db",
+            "description": "搜索文献库",
+            "type": "literature"
+        },
+        {
+            "id": "search_personal_db",
+            "name": "search_personal_db",
+            "description": "搜索个人数据库",
+            "type": "database"
+        },
+        {
+            "id": "search_guideline_db",
+            "name": "search_guideline_db",
+            "description": "搜索指南数据库",
+            "type": "knowledge_base"
+        }
+    ]
+
+class McpUrl(BaseModel):
+    url: str
+
+@app.post("/validate_mcp")
+async def validate_mcp(mcp_url: McpUrl):
+    """
+    验证MCP的URl是合法的
+    """
+    endpoint = mcp_url.url
+    if urlparse(endpoint).scheme not in ("http", "https"):
+        raise HTTPException(status_code=400, detail=f"Endpoint {endpoint} is not a valid HTTP(S) URL")
+
+    try:
+        async with sse_client(endpoint) as streams:
+            async with ClientSession(*streams) as session:
+                await session.initialize()
+                tools = await session.list_tools()
+                return {
+                    "status": "ok",
+                    "message": "Successfully connected to MCP server and listed tools.",
+                    "tools": tools
+                }
+    except Exception as e:
+        logger.error(f"MCP validation failed: {e}")
+        return {"status": "error", "message": f"Failed to connect or list tools from MCP server: {str(e)}"}
+
 
 if __name__ == "__main__":
     import uvicorn

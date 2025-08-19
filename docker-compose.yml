@@ -1,0 +1,38 @@
+services:
+
+  entity_identity:
+    container_name: evidenceii_entity_identity
+    build:
+      context: ./backend/entity_identity
+      dockerfile: Dockerfile
+    ports:
+      - "6200:6200"
+    network_mode: bridge
+    restart: unless-stopped
+  knowledge_agent:
+    container_name: evidenceii_knowledge_agent
+    build:
+      context: ./backend/knowledge_agent
+      dockerfile: Dockerfile
+    ports:
+      - "10000:10000"
+    network_mode: bridge
+    restart: unless-stopped
+  mq_backend:
+    container_name: evidenceii_mq_backend
+    build:
+      context: ./backend/mq_backend
+      dockerfile: Dockerfile
+    network_mode: bridge
+    restart: unless-stopped
+  personal_db:
+    container_name: evidenceii_personal_db
+    build:
+      context: ./backend/personal_db
+      dockerfile: Dockerfile
+    volumes:
+      - /data/server/personal_chromadb:/app/cache/chromadb
+    ports:
+      - "9900:9900"
+    network_mode: bridge
+    restart: unless-stopped

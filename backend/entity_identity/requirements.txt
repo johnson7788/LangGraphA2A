@@ -3,3 +3,4 @@ fastapi
 uvicorn
 mysql-connector-python
 google-generativeai
+dotenv

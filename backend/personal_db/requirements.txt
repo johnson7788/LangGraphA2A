@@ -5,5 +5,7 @@ python-dotenv
 sse-starlette
 pytest
 httpx
-dotenv
-pika
+tika
+chromadb
+openai
+python-multipart

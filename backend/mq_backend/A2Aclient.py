@@ -61,10 +61,11 @@ class A2AClientWrapper:
             except Exception as e:
                 self.logger.error(f'获取 AgentCard 失败: {e}', exc_info=True)
                 raise RuntimeError('无法获取 agent card，无法继续运行。') from e
-    async def generate(self, user_question: str, history: list[dict] = []) -> None:
+    async def generate(self, user_question: str, history: list[dict] = [], tools: list[str] = [], user_id="") -> None:
         """
         user_question: 用户问题
         history： 历史对话消息
+        user_id:  用户的id
         执行一次对话流程
         """
         if self.agent_card is None:
@@ -81,7 +82,7 @@ class A2AClientWrapper:
                     'role': 'user',
                     'parts': [{'kind': 'text', 'text': user_question}],
                     'messageId': uuid4().hex,
-                    'metadata': {'language': "English", 'history': history},
+                    'metadata': {'language': "English", 'history': history, 'tools': tools, "user_id": user_id},
                     'contextId': self.session_id,
                 },
             }
@@ -93,9 +94,18 @@ class A2AClientWrapper:
                 params=MessageSendParams(**message_data)
             )
             stream_response = self.client.send_message_streaming(streaming_request)
+            # 表示工具完成了调用，可以返回metada信息了
+            finish_tool_call = False
+            # 是否发送过了metata信息给前端
+            send_metadata_finsihed = False
             async for chunk in stream_response:
                 self.logger.info(f"输出的chunk内容: {chunk}")
                 chunk_data = chunk.model_dump(mode='json', exclude_none=True)
+                if "error" in chunk_data:
+                    self.logger.error(f"错误信息: {chunk_data['error']}")
+                    print(f"错误信息: {chunk_data['error']}")
+                    yield {"type": "final", "text": "对话结束"}
+                    break
                 result = chunk_data["result"]
                 # 判断 chunk 类型
                 # 查看parts类型，分为data，text，reasoning，final，例如放入{"type": "text", "text": xxx}，最后yield返回
@@ -117,8 +127,18 @@ class A2AClientWrapper:
                             part_kind = part["kind"]
                             print(f"status, {part}")
                             if part_kind == "data":
-                                yield {"type": "data", "data": part["data"]["data"]}  # 这里我写了2个data的嵌套了
+                                part_data = part["data"]["data"] # 这里我写了2个data的嵌套了
+                                part_data_one = part_data[0] # 第1条数据
+                                if "type" in part_data_one and part_data_one.get("type") == "function":
+                                    yield {"type": "tool_call", "data": part_data}
+                                else:
+                                    finish_tool_call = True
+                                    yield {"type": "tool_result", "data": part_data}
                             elif part_kind == "text":
+                                if finish_tool_call and not send_metadata_finsihed:
+                                    metadata = message["metadata"]
+                                    yield {"type": "metadata", "data": metadata}
+                                    send_metadata_finsihed = True
                                 yield {"type": "text", "text": part["text"]}
                             else:
                                 print(f"未知的status-update类型: {part_kind}")
@@ -135,6 +155,7 @@ class A2AClientWrapper:
                     print(f"任务的状态是: {chunk_status}")
                 else:
                     self.logger.warning(f"未识别的chunk类型: {result.get('kind')}")
+            print(f"Agent正常处理完成，对话结束。")
             yield {"type": "final", "text": "对话结束"}
 
 if __name__ == '__main__':

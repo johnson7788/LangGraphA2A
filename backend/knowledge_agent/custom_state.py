@@ -11,14 +11,8 @@ from pydantic import BaseModel
 from langgraph.prebuilt.chat_agent_executor import AgentState
 import operator
 
-class ResponseFormat(BaseModel):
-    """按照这个格式回答用户。"""
-
-    status: Literal['completed', 'error'] = 'completed'
-    message: str
-
 class CustomState(AgentState):
     # The user_name field in short-term state
-    structured_response: NotRequired[ResponseFormat]
     # 搜索的数据库的metadata信息的存储
     search_dbs: Annotated[list[dict], operator.add]
+    user_id: NotRequired[str|int]

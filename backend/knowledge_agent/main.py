@@ -31,11 +31,11 @@ async def start_server(host, port, mcp_config, select_tool_names):
         tags=['知识检索', '多轮问答', '智能助手'],
         examples=['帕金森的治疗方案有哪些？', '我在指南中能找到哪些营养建议？'],
     )
-
+    CARD_URL = os.environ.get('CARD_URL', f'http://{host}:{port}/')
     agent_card = AgentCard(
         name='知识库问答 Agent',
         description='可以根据用户的问题从多个知识库中检索并回答',
-        url=f'http://{host}:{port}/',
+        url=CARD_URL,
         version='1.0.0',
         defaultInputModes=KnowledgeAgent.SUPPORTED_CONTENT_TYPES,
         defaultOutputModes=KnowledgeAgent.SUPPORTED_CONTENT_TYPES,

@@ -9,13 +9,13 @@ import time
 import json
 import asyncio
 import traceback
+import aiohttp
 import dotenv
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from mq_handler import start_consumer, MQHandler
 from A2Aclient import A2AClientWrapper
 dotenv.load_dotenv()
-
 
 # 创建一个线程池，定义线程池的大小10
 executor = ThreadPoolExecutor(max_workers=20)
@@ -87,6 +87,134 @@ def entity_indentify_extract_match_db(content):
     print(f"花费时间: {time.time() - start_time}秒")
     return res
 
+async def entity_indentify_extract_match_db_async(content):
+    """异步版本的实体识别接口"""
+    url = f"{ENTITY_URL}/api/entity_indentify"
+    start_time = time.time()
+    headers = {'content-type': 'application/json'}
+    data = {"match_db": True, "content": content}
+
+    async with aiohttp.ClientSession() as session:
+        async with session.post(url, json=data, headers=headers) as resp:
+            assert resp.status == 200, f"返回的status code不是200，请检查"
+            res = await resp.json()
+            print(json.dumps(res, indent=4, ensure_ascii=False))
+            msg = res.get("msg")
+            assert msg == "success", f"接口返回的msg不是成功，请检查"
+            print(f"花费时间: {time.time() - start_time}秒")
+            return res
+
+def call_tool_mapper(one_chunk_data):
+    """
+    工具调用时，改成前端需要的数据格式
+    """
+    print(f"进行tool的转换: {one_chunk_data}")
+    assert isinstance(one_chunk_data, dict), f"必须是字典格式: {one_chunk_data}"
+    func_name = one_chunk_data["function"]["name"]
+    func_args = one_chunk_data["function"]["arguments"]
+    id = one_chunk_data["id"]
+    mapper = {
+        "search_document_db": {
+            "name": "文献库",
+            "globalization": "国内"
+        },
+        "search_guideline_db": {
+            "name": "指南",
+            "globalization": "国际"
+        },
+        "search_personal_db": {
+            "name": "个人知识库",
+            "globalization": "个人"
+        }
+    }
+    db_name = mapper[func_name]["name"]
+    globalization = mapper[func_name]["globalization"]
+    data = [
+        {"status": "Working",
+         "display": f"正在检索{db_name}\n",
+         "name": db_name,
+         "globalization": globalization,
+         "func_name": func_name,
+         "arguments": func_args,
+         "id": id
+         }
+    ]
+    print(f"转换的结果是: {data}")
+    return data
+def result_tool_mapper(one_chunk_data):
+    """
+    工具结果时，改成前端需要的数据格式
+    """
+    print(f"进行tool的转换: {one_chunk_data}")
+    assert isinstance(one_chunk_data, dict), f"必须是字典格式: {one_chunk_data}"
+    func_name = one_chunk_data["name"]
+    func_output = one_chunk_data["tool_output"]
+    id = one_chunk_data["tool_call_id"]
+    mapper = {
+        "search_document_db": {
+            "name": "文献库",
+            "globalization": "国内"
+        },
+        "search_guideline_db": {
+            "name": "指南",
+            "globalization": "国际"
+        },
+        "search_personal_db": {
+            "name": "个人知识库",
+            "globalization": "个人"
+        }
+    }
+    db_name = mapper[func_name]["name"]
+    globalization = mapper[func_name]["globalization"]
+    data = [
+        {"status": "Done",
+         "display": f"检索{db_name}完成\n",
+         "name": db_name,
+         "globalization": globalization,
+         "func_name": func_name,
+         "func_output": func_output,
+         "id": id
+         }
+    ]
+    print(f"转换的结果是: {data}")
+    return data
+def metadata_tool_mapper(one_chunk_data):
+    """
+    metadata信息发送给前端
+    """
+    print(f"进行metadata的转换: {one_chunk_data}")
+    assert isinstance(one_chunk_data, dict), f"必须是字典格式: {one_chunk_data}"
+    search_dbs = one_chunk_data["search_dbs"]
+    data = []
+    for search_db_res in search_dbs:
+        func_name = search_db_res["db"]
+        result = search_db_res["result"]
+        mapper = {
+            "search_document_db": {
+                "name": "文献库",
+                "globalization": "国内"
+            },
+            "search_guideline_db": {
+                "name": "指南",
+                "globalization": "国际"
+            },
+            "search_personal_db": {
+                "name": "个人知识库",
+                "globalization": "个人"
+            }
+        }
+        db_name = mapper[func_name]["name"]
+        globalization = mapper[func_name]["globalization"]
+        one_data = {
+             "globalization": globalization,
+             "name": db_name,
+             "data": result,
+             }
+        data.append(one_data)
+    print(f"转换的结果是: {data}")
+    return data
+
+
 def handle_gpt_stream_response(session_id, user_id, function_id, stream_response):
     """
     处理GPT流式响应
@@ -120,10 +248,16 @@ def handle_gpt_stream_response(session_id, user_id, function_id, stream_response
         return
     async def consume():
         try:
+            # 记录所有停止的tools
+            running_tools = []  # 正在检索的工具，也只发送给前端一次
+            stopped_tools = []
+            reponse_content = ""
             async for chunk in stream_response:
+                print(f"chunk: {chunk}")
                 try:
                     data_type = chunk.get("type")
                     if data_type == "final":
+                        print(f"data_type是final，开始最终的stop返回")
                         answer_queue_message = {
                             "sessionId": session_id,
                             "userId": user_id,
@@ -150,42 +284,80 @@ def handle_gpt_stream_response(session_id, user_id, function_id, stream_response
                             "reasoningMessage": '',
                             "type": 4,
                         }
-                    elif data_type == "data":
-                        chunk_data = chunk.get("data", {})
-                        tools_data = chunk_data.get("data", [])
-                        # 发送给前端的数据，list格式，里面是字典
-                        front_data = [tool["front_data"] for tool in tools_data]
-                        #工具是调用还是结束了，只需要工具结束了的数据
-                        tool_type = chunk_data.get("type")
+                        reponse_content += chunk.get("text", "")
+                    elif data_type == "metadata":
+                        metadata = chunk.get("data", {})
+                        metadata_to_front = metadata_tool_mapper(metadata)
                         answer_queue_message = {
                             "sessionId": session_id,
                             "userId": user_id,
                             "functionId": function_id,
-                            "message": json.dumps(front_data, ensure_ascii=False),
-                            "reasoningMessage": "",
-                            "type": 5,
+                            "message": json.dumps(metadata_to_front, ensure_ascii=False),
+                            "reasoningMessage": '',
+                            "type": 6,
                         }
-                        print(f"[Info] 发送状态数据完成（type 5)：{answer_queue_message}")
-                        # 发送引用数据和参考，即匹配的结果
-                        if tool_type == "tool_result":
-                            tool_retrieve_data = [one.get("data",{}) for one in tools_data]
-                            answer_reference = {
+                        print(f"[Info] 发送引用数据完成type6：{answer_queue_message}")
+                    elif data_type == "tool_call":
+                        chunk_data = chunk.get("data", {})
+                        print(f"触发了函数调用: {chunk_data}")
+                        tool_to_fronts = []
+                        for one_chunk_data in chunk_data:
+                            # 只处理函数的返回结果，不处理函数的调用请求
+                            tool_to_front = call_tool_mapper(one_chunk_data)
+                            # 每个工具只停止一次
+                            tool_name = tool_to_front[0]["name"]
+                            if tool_name in running_tools:
+                                continue
+                            running_tools.append(tool_name)
+                            tool_to_fronts.extend(tool_to_front)
+                        if tool_to_fronts:
+                            answer_queue_message = {
                                 "sessionId": session_id,
                                 "userId": user_id,
                                 "functionId": function_id,
-                                "message": json.dumps(tool_retrieve_data, ensure_ascii=False),
+                                "message": json.dumps(tool_to_fronts, ensure_ascii=False),
                                 "reasoningMessage": "",
-                                "type": 6,
+                                "type": 5,
                             }
-                            mq_handler.send_message(answer_reference)
-                            print(f"[Info] 发送引用和参考数据完成(type 6)：{answer_reference}")
+                            mq_handler.send_message(answer_queue_message)
+                            print(f"[Info] 发送工具使用状态type5：{answer_queue_message}")
+                        continue
+                    elif data_type == "tool_result":
+                        chunk_data = chunk.get("data", {})
+                        print(f"触发了函数结果返回: {chunk_data}")
+                        for one_chunk_data in chunk_data:
+                            # 只处理函数的返回结果，不处理函数的调用请求
+                            tool_to_front = result_tool_mapper(one_chunk_data)
+                            # 每个工具只停止一次
+                            tool_name = tool_to_front[0]["name"]
+                            if tool_name in stopped_tools:
+                                continue
+                            stopped_tools.append(tool_name)
+                            answer_queue_message = {
+                                "sessionId": session_id,
+                                "userId": user_id,
+                                "functionId": function_id,
+                                "message": json.dumps(tool_to_front, ensure_ascii=False),
+                                "reasoningMessage": "",
+                                "type": 5,
+                            }
+                            mq_handler.send_message(answer_queue_message)
+                            print(f"[Info] 发送工具调用完成type5：{answer_queue_message}")
+                        continue
                     elif data_type == "artifact":
                         print(f"[Info] 收到artifact数据，如果我们设置的Stream，那么这条数据需要忽略：{chunk}")
-                        #识别实体
+                        #识别实体,artifact_content应该是空的，使用收集的reponse_content进行实体识别
                         artifact_content = chunk["text"]
                         if ENTITY_URL:
-                            entities = entity_indentify_extract_match_db(artifact_content)
+                            # entities = entity_indentify_extract_match_db(reponse_content)
+                            loop = asyncio.get_running_loop()
+                            entities = await loop.run_in_executor(None, entity_indentify_extract_match_db,reponse_content)
                             entities_data = entities["data"]
+                            diseases = entities_data.get("diseases")
+                            drugs = entities_data.get("drugs")
+                            # 如果没有疾病和药品，则不进行返回
+                            if not diseases and not drugs:
+                                continue
                             entities_message = {
                                 "sessionId": session_id,
                                 "userId": user_id,
@@ -196,6 +368,7 @@ def handle_gpt_stream_response(session_id, user_id, function_id, stream_response
                             }
                             mq_handler.send_message(entities_message)
                             print(f"[Info] 发送实体识别数据(type 7)：{entities_message}")
+                        continue
                     else:
                         print(f"[警告] 未知的chunk类型：{data_type}，已跳过")
                         continue
@@ -229,13 +402,16 @@ def handle_rabbit_queue_message(rabbit_message):
     messages = rabbit_message['messages']
     user_question_dict = messages.pop()
     user_question = user_question_dict["content"]
-    # attachment = rabbit_message['attachment']
-    # link_id = rabbit_message.get('linkId', None)
+    attachment = rabbit_message.get('attachment')
+    if not attachment:
+        attachment = {}
+    tools = attachment.get("tools", [])
+    call_tools = rabbit_message.get('callTools', True)
 
-    if function_id == 1:
+    if function_id == 8:
         # Agent RAG的问答
         wrapper = A2AClientWrapper(session_id=session_id, agent_url=AGENT_URL)
-        stream_response = wrapper.generate(user_question=user_question, history=messages)
+        stream_response = wrapper.generate(user_question=user_question, history=messages, tools=tools, user_id=user_id)
         handle_gpt_stream_response(session_id, user_id, function_id, stream_response)
     else:
         print('不在进行处理这条消息，function_id NOT  : ' + str(function_id))
@@ -261,4 +437,5 @@ def callback(ch, method, properties, body):
 
 
 if __name__ == '__main__':
+    print("开始监听RabbitMQ队列...")
     start_consumer(callback, auto_ack=False)

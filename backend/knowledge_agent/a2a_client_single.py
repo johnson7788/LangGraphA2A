@@ -58,13 +58,14 @@ async def main() -> None:
         logger.info('A2AClient 初始化完成。')
 
         # === 多轮对话 ===
+        # 'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些？'}],
         logger.info("开始进行对话...")
         multiturn_first: dict[str, Any] = {
             'message': {
                 'role': 'user',
-                'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些？'}],
+                'parts': [{'kind': 'text', 'text': '帕金森的治疗方案有哪些'}],
                 'messageId': uuid4().hex,
-                'metadata': {'language': "English"}
+                'metadata': {'language': "English", "tools": ["search_document_db", "search_personal_db"], "user_id": 123456}
             },
         }
         # === 流式对话 ===

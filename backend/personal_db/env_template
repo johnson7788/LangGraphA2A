@@ -1,0 +1,10 @@
+RABBITMQ_HOST=localhost
+RABBITMQ_PORT=5672
+RABBITMQ_USERNAME=admin
+RABBITMQ_PASSWORD=welcome
+RABBITMQ_VIRTUAL_HOST=hello
+RABBITMQ_URL=amqp://admin:welcome@127.0.0.1/hello?heartbeat=180
+QUEUE_NAME_QUESTION=person_db_question
+QUEUE_NAME_ANSWER=person_db_answer
+ALI_API_KEY=sk-xxx
+

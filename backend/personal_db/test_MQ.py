@@ -25,7 +25,6 @@ RABBITMQ_PORT = os.environ["RABBITMQ_PORT"]
 RABBITMQ_USERNAME = os.environ["RABBITMQ_USERNAME"]
 RABBITMQ_PASSWORD = os.environ["RABBITMQ_PASSWORD"]
 RABBITMQ_VIRTUAL_HOST = os.environ["RABBITMQ_VIRTUAL_HOST"]
-QUEUE_NAME_ANSWER = os.environ["QUEUE_NAME_ANSWER"]
 QUEUE_NAME_QUESTION = os.environ["QUEUE_NAME_QUESTION"]
 
 
@@ -36,11 +35,24 @@ class MQClientTestCase(unittest.IsolatedAsyncioTestCase):
     def test_publish_message(self):
         # 自定义一些数据格式
         # 历史记录
-        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False,  "messages":  [{'role': 'user', 'content': "我叫Johnson Guo"}, {'role': 'ai', 'content': "很高兴认识你"}, {"role": "user", "content": "你知道我叫什么吗?"}]}
+        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False, "linkId": 932, "messages":  [{'role': 'user', 'content': "我叫Johnson Guo"}, {'role': 'ai', 'content': "很高兴认识你"}, {"role": "user", "content": "你知道我叫什么吗?"}]}
         # 直接问问题
-        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False, "messages":  [{"role": "user", "content": "你好"}]}
-        data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False, "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}]}
-        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False,  "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}], "attachment": {"tools": ["search_document_db"]}}
+        # data = {'linkId': uuid4().hex, 'sessionId': uuid4().hex, 'userId': 1097015, 'functionId': 8, 'messages': [{'role': 'user', 'content': '狼疮肾炎的病理分型'}], 'type': 1, 'attachment': '', 'callTools': True}
+        data = {
+            "message": {
+                "id": 72, ##文件id
+                "userId": 23456, ##用户id
+                "createdTime": "2025-08-12 13:34:20",
+                "modifiedTime": None,
+                "fileKey": None,
+                "fileSize": 123456,
+                "fileType": "pdf",
+                "name": "European_journal.pdf",
+                "url": "https://bing.com/26704783_12e12ce32aa4405d9e86ce7151edc3de.pdf", ##文件地址
+                "folderId": 2
+            },
+            "type": "updateOrSave"
+        }
         json_data = json.dumps(data, ensure_ascii=False)
         nest_json_data = json.dumps(json_data)
         # 建立与RabbitMQ服务器的连接
