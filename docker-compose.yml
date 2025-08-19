@@ -1,5 +1,4 @@
 services:
-
   entity_identity:
     container_name: evidenceii_entity_identity
     build:
@@ -36,3 +35,14 @@ services:
       - "9900:9900"
     network_mode: bridge
     restart: unless-stopped
+  frontend:
+    container_name: evidenceii_frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "9680:80"
+    depends_on:
+      - api_gateway
+    networks:
+      - evidenceii_network
