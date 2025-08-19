@@ -108,6 +108,46 @@ npm run dev
 ```
 启动成功后，即可在浏览器中打开 `http://localhost:5173` (或其他指定端口) 开始使用。
 
+
+# 手动安装
+1. 创建python环境， 安装依赖
+```
+conda env create langgrapha2a
+conda activate langgrapha2a
+cd backend/api_gateway
+pip install -r requirements.txt
+cd backend/knowledge_agent
+pip install -r requirements.txt
+cd backend/entity_identity
+pip install -r requirements.txt
+cd backend/mq_backend
+pip install -r requirements.txt
+cd backend/personal_db
+pip install -r requirements.txt
+```
+
+2.创建Rabbit MQ
+```
+docker run -d --hostname rabbitapp --name rabbitapp -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=welcome -p 4369:4369 -p 5671:5671 -p 5672:5672 -p 25672:25672 -p 15671:15671 -p 15672:15672 -p 15691:15691 -p 15692:15692 rabbitmq:3-management
+```
+3. 创建vhost
+```mermaid
+python script create_vhost.py
+```
+4. 启动每个后台
+```
+cd backend/api_gateway
+python main.py
+cd backend/knowledge_agent
+python main.py
+cd backend/entity_identity
+python entity_main.py
+cd backend/mq_backend
+python MQ_ii_main_api.py
+cd backend/personal_db
+python main.py
+```
+
 ---
 
 ## 技术栈
