@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -50,6 +50,8 @@ interface ReferenceForMap extends MatchSentence {
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, references, streaming }) => {
   const [activeRef, setActiveRef] = useState<{id: string, data: ReferenceForMap} | null>(null);
+  const [popupPosition, setPopupPosition] = useState({ top: 0, left: 0 });
+  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const referenceMap = useMemo(() => {
     if (!references) return {};
@@ -78,28 +80,31 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, ref
     });
   };
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleMouseOver = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
-    const refId = target.dataset.refId;
-    if (refId && referenceMap[refId]) {
-      setActiveRef({ id: refId, data: referenceMap[refId] });
-    } else if (activeRef) {
-        // Click outside the popup
-        const popup = (e.currentTarget as HTMLElement).querySelector('[data-popup="true"]');
-        if (popup && !popup.contains(target)) {
-            setActiveRef(null);
-        }
+    if (target.dataset.refId) {
+      if (hideTimeoutRef.current) {
+        clearTimeout(hideTimeoutRef.current);
+        hideTimeoutRef.current = null;
+      }
+      const refId = target.dataset.refId;
+      if (referenceMap[refId]) {
+        setActiveRef({ id: refId, data: referenceMap[refId] });
+        setPopupPosition({ top: e.clientY + 10, left: e.clientX + 10 });
+      }
     }
   };
   
-  const handleClose = () => {
+  const handleMouseOut = () => {
+    hideTimeoutRef.current = setTimeout(() => {
       setActiveRef(null);
-  }
+    }, 200);
+  };
 
   const processedContent = preprocessMarkdownWithRefs(content);
 
   return (
-    <div className="prose max-w-none text-gray-800 leading-relaxed relative" onClick={handleClick}> 
+    <div className="prose max-w-none text-gray-800 leading-relaxed relative" onMouseOver={handleMouseOver} onMouseOut={handleMouseOut}> 
         <ReactMarkdown
           children={processedContent}
           remarkPlugins={[remarkGfm]}
@@ -113,15 +118,20 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, ref
         )}
 
       {activeRef && (
-        <div data-popup="true" className="absolute z-10 bottom-full mb-2 w-full max-w-md bg-white border border-gray-200 p-3 rounded-lg shadow-lg">
+        <div 
+          data-popup="true" 
+          className="fixed z-10 w-full max-w-md bg-white border border-gray-200 p-3 rounded-lg shadow-lg"
+          style={{ top: popupPosition.top, left: popupPosition.left }}
+          onMouseEnter={() => {
+            if (hideTimeoutRef.current) {
+              clearTimeout(hideTimeoutRef.current);
+              hideTimeoutRef.current = null;
+            }
+          }}
+          onMouseLeave={handleMouseOut}
+        >
           <div className="flex justify-between items-center mb-2">
             <h4 className="font-bold text-base">Reference [{activeRef.id}]</h4>
-            <button
-                className="text-gray-500 hover:text-gray-800"
-                onClick={handleClose}
-            >
-                &times;
-            </button>
           </div>
           <div className="max-h-48 overflow-y-auto text-sm">
             <HighlightMatch {...activeRef.data} />
