@@ -148,6 +148,9 @@ cd backend/personal_db
 python main.py
 ```
 
+# 自定义langgraph工具和MCP工具
+修改[tools.py](backend%2Fknowledge_agent%2Ftools.py)文件和创建[mcp_config.json](backend%2Fknowledge_agent%2Fmcp_config.json)
+
 ---
 
 ## 技术栈
