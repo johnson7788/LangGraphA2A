@@ -180,9 +180,6 @@ function App() {
                       try {
                         const toolData = JSON.parse(data.message);
                         if (Array.isArray(toolData) && toolData.length > 0) {
-                          if (toolData[0].data && Array.isArray(toolData[0].data)) {
-                            newMsg.references = toolData;
-                          } else {
                             newMsg.thoughts = newMsg.thoughts ? [...newMsg.thoughts] : [];
                             toolData.forEach(tool => {
                               const existingThoughtIndex = newMsg.thoughts.findIndex(t => t.id === tool.id);
@@ -206,7 +203,6 @@ function App() {
                                 });
                               }
                             });
-                          }
                         }
                       } catch (e) {
                         console.error('Error parsing tool/reference data:', e);
@@ -216,6 +212,7 @@ function App() {
                       try {
                         const newReferences = JSON.parse(data.message);
                         if (Array.isArray(newReferences)) {
+                          newMsg.references = newReferences;
                           setResearchData(prevData => {
                             const newData = [...prevData];
                             newReferences.forEach(newSource => {

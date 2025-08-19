@@ -4,6 +4,7 @@ import { Message } from '../../types';
 import { ThoughtCard } from './ThoughtCard';
 import { EntityLinkedBlock } from './EntityLinkedBlock';
 import References from './References';
+import { MarkdownRenderer } from './MarkdownRenderer';
 
 interface AgentMessageProps {
   message: Message;
@@ -53,12 +54,11 @@ export const AgentMessage: React.FC<AgentMessageProps> = ({ message }) => {
 
         {/* Main Response */}
         <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
-          <div className="prose max-w-none text-gray-800 leading-relaxed">
-            {message.content}
-            {message.streaming && (
-              <span className="inline-block w-1 h-4 bg-blue-500 ml-1 animate-pulse" />
-            )}
-          </div>
+          <MarkdownRenderer
+            content={message.content}
+            references={message.references || []}
+            streaming={!!message.streaming}
+          />
         </div>
 
         {/* References Display */}
