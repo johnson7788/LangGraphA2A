@@ -5,6 +5,7 @@ import { ChatInputBox } from './components/chat/ChatInputBox';
 import { DataSourceSelector } from './components/sidebar/DataSourceSelector';
 import { MCPConfigPanel } from './components/sidebar/MCPConfigPanel';
 import { Button } from './components/common/Button';
+import ResearchDisplay from './components/chat/ResearchDisplay';
 import { DataSource, MCPConfig, Message, Conversation, ThoughtStep, EntityResult, Reference } from './types';
 
 function App() {
