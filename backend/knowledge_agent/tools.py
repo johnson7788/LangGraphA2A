@@ -63,7 +63,7 @@ def fuzzy_search(keyword: str, content: str, idprefix="01", db_id="01") -> str:
     return {"match_sentence": match_sentence, "match_content": match_content, "match_sentences": match_sentences}
 
 @tool
-def search_document_db(keyword: str, tool_call_id: Annotated[str, InjectedToolCallId], state: Annotated[CustomState, InjectedState]) -> str:
+def search_document_db(keyword: str, tool_call_id: Annotated[str, InjectedToolCallId], state: Annotated[CustomState, InjectedState]) -> Command:
     """
     搜索医学文献库
     :param keyword: 关键词, eg: 乳腺癌
@@ -88,7 +88,7 @@ def search_document_db(keyword: str, tool_call_id: Annotated[str, InjectedToolCa
     })
 
 @tool
-def search_guideline_db(keyword: str, tool_call_id: Annotated[str, InjectedToolCallId], state: Annotated[CustomState, InjectedState]) -> str:
+def search_guideline_db(keyword: str, tool_call_id: Annotated[str, InjectedToolCallId], state: Annotated[CustomState, InjectedState]) -> Command:
     """
     搜索医学指南数据
     :param keyword: 关键词, eg: 乳腺癌
