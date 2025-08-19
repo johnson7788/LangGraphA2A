@@ -189,7 +189,7 @@ npm run dev
 - [x] LLM 思考过程返回 (LLM Thinking Return)
 - [x] 实现 Plan-and-Execute Agent 模式
 - [ ] 将 [gemini-fullstack-langgraph-quickstart](https://github.com/google-gemini/gemini-fullstack-langgraph-quickstart) 改造为 A2A 形式
-
+- [ ] 个人知识库的UI
 ---
 
 ## 联系方式
