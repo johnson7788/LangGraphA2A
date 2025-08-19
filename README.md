@@ -118,7 +118,7 @@ npm run dev
 
 # 手动安装
 1. 创建python环境， 安装依赖
-```
+```bash
 conda env create langgrapha2a
 conda activate langgrapha2a
 cd backend/api_gateway
@@ -134,15 +134,15 @@ pip install -r requirements.txt
 ```
 
 2.创建Rabbit MQ
-```
+```bash
 docker run -d --hostname rabbitapp --name rabbitapp -e RABBITMQ_DEFAULT_USER=admin -e RABBITMQ_DEFAULT_PASS=welcome -p 4369:4369 -p 5671:5671 -p 5672:5672 -p 25672:25672 -p 15671:15671 -p 15672:15672 -p 15691:15691 -p 15692:15692 rabbitmq:3-management
 ```
 3. 创建vhost
-```mermaid
+```bash
 python script create_vhost.py
 ```
 4. 启动每个后台
-```
+```bash
 cd backend/api_gateway
 python main.py
 cd backend/knowledge_agent
