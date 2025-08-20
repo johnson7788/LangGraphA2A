@@ -42,6 +42,7 @@ graph TD
             
         end
         F[(Personal DB)]
+        I[(Other Tools)]
         H[MCP]
     end
     
@@ -60,7 +61,7 @@ graph TD
 
     D1 --> F
     D1 --> H
-
+    D1 --> I
 
     %% ===== 结果回传 =====
     D1 -- 发布结果 --> C
