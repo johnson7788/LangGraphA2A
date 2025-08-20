@@ -14,9 +14,6 @@ from datetime import datetime
 import random
 import hashlib
 from pathlib import Path
-from fastmcp import FastMCP
-from google.adk.tools import ToolContext
-from google.adk.tools.agent_tool import AgentTool
 from openai import OpenAI, AsyncOpenAI # 导入 AsyncOpenAI
 import asyncio # 导入 asyncio
 from prompt import IMAGE_ANALYSIS_AGENT_PROMPT_CHINESE

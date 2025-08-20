@@ -1,7 +1,6 @@
 fastapi
-uvicorn[standard]
+uvicorn
 python-dotenv
 openai
 tika
 fastmcp
-google-adk

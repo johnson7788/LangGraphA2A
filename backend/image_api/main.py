@@ -91,6 +91,5 @@ async def handle_recognize_file(request: FileRequest = Body(...)):
 # --- 启动服务 ---
 if __name__ == "__main__":
     print("启动 FastAPI 服务...")
-    # 使用 uvicorn 启动服务，监听在 0.0.0.0:8000
     # 在生产环境中，建议使用 gunicorn + uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=9700)
