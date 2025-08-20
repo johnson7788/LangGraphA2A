@@ -73,6 +73,7 @@ docker run -d --hostname rabbitapp --name rabbitapp -e RABBITMQ_DEFAULT_USER=adm
    
 
   不同 `type` 的含义:
+
    * type: 4 (文本或停止信号)
        * 如果 message 是一个字符串，代表是LLM生成的回答文本块。
        * 如果 message 是 '[stop]'，代表流式响应结束。

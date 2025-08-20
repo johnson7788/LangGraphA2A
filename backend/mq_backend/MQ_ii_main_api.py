@@ -15,7 +15,14 @@ from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from mq_handler import start_consumer, MQHandler
 from A2Aclient import A2AClientWrapper
+from Parse_QA import QAParser
 dotenv.load_dotenv()
+
+IMAGE_API = os.environ.get('IMAGE_API')
+parser_message = QAParser(
+    base_url=IMAGE_API,
+    timeout=30.0,
+)
 
 # 创建一个线程池，定义线程池的大小10
 executor = ThreadPoolExecutor(max_workers=20)
@@ -400,17 +407,20 @@ def handle_rabbit_queue_message(rabbit_message):
     user_id = rabbit_message['userId']
     function_id = rabbit_message['functionId']
     messages = rabbit_message['messages']
-    user_question_dict = messages.pop()
+    convert_messages = parser_message.transform_user_question(messages)
+    user_question_dict = convert_messages.pop()
+    # 解析出来的用户问题
     user_question = user_question_dict["content"]
     attachment = rabbit_message.get('attachment')
     if not attachment:
         attachment = {}
+    assert isinstance(attachment, dict), f"attachment字段必须是字典: {attachment}"
     tools = attachment.get("tools", [])
 
     if function_id == 8:
         # Agent RAG的问答
         wrapper = A2AClientWrapper(session_id=session_id, agent_url=AGENT_URL)
-        stream_response = wrapper.generate(user_question=user_question, history=messages, tools=tools, user_id=user_id)
+        stream_response = wrapper.generate(user_question=user_question, history=convert_messages, tools=tools, user_id=user_id)
         handle_gpt_stream_response(session_id, user_id, function_id, stream_response)
     else:
         print('不在进行处理这条消息，function_id NOT  : ' + str(function_id))

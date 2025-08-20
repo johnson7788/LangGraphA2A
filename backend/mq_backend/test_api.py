@@ -36,11 +36,70 @@ class MQClientTestCase(unittest.IsolatedAsyncioTestCase):
     def test_publish_message(self):
         # 自定义一些数据格式
         # 历史记录
-        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False,  "messages":  [{'role': 'user', 'content': "我叫Johnson Guo"}, {'role': 'ai', 'content': "很高兴认识你"}, {"role": "user", "content": "你知道我叫什么吗?"}]}
+        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8,  "messages":  [{'role': 'user', 'content': "我叫Johnson Guo"}, {'role': 'ai', 'content': "很高兴认识你"}, {"role": "user", "content": "你知道我叫什么吗?"}]}
         # 直接问问题
-        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False, "messages":  [{"role": "user", "content": "你好"}]}
-        data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False, "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}]}
-        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "callTools": False,  "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}], "attachment": {"tools": ["search_document_db"]}}
+        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8,  "messages":  [{"role": "user", "content": "你好"}]}
+        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8, "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}]}
+        # data = {"sessionId": uuid4().hex, "userId": "johnson", "functionId":8,  "messages":  [{"role": "user", "content": "帕金森的治疗方案有哪些?"}], "attachment": {"tools": ["search_document_db"]}}
+        # 图片
+#         data = {
+#     "sessionId": uuid4().hex,
+#     "userId": 1106148,
+#     "functionId": 8,
+#     "messages": [
+#         {
+#             "role": "user",
+#             "content": [
+#                 {
+#                     "text": "您好，看一下图片是什么内容",
+#                     "type": "text"
+#                 },
+#                 {
+#                     "url": "https://infoxmed20.infox-med.com/infoxmed20/1755507947590-iOS-IMG.jpg",
+#                     "type": "image"
+#                 }
+#             ]
+#         }
+#     ],
+#     "type": 1,
+#     "attachment": {
+#         "images": [{
+#             "url": "https://infoxmed20.infox-med.com/infoxmed20/1755507947590-iOS-IMG.jpg",
+#             "type": "image"
+#         }]
+#     },
+# }
+        # 文件识别
+        data = {
+    "linkId": uuid4().hex,
+    "sessionId": uuid4().hex,
+    "userId": 1106148,
+    "functionId": 8,
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "text": "您好，文件里说了什么内容",
+                    "type": "text"
+                },
+                {
+                    "url": "https://rahacollege.co.in/learning/38.pdf",
+                    "type": "file"
+                }
+            ]
+        }
+    ],
+    "type": 1,
+    "attachment": {
+        "files": [
+            {
+                "url": "https://rahacollege.co.in/learning/38.pdf",
+                "type": "file"
+            }
+        ]
+    },
+}
         json_data = json.dumps(data, ensure_ascii=False)
         nest_json_data = json.dumps(json_data)
         # 建立与RabbitMQ服务器的连接
