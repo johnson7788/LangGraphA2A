@@ -11,6 +11,7 @@ import tempfile
 from urllib.parse import urlparse
 
 # 从其他模块导入核心功能
+from image_utils import cache_decorator
 from read_image import recognize_image_scene
 from read_all_files import read_file_content
 
@@ -68,6 +69,13 @@ async def handle_recognize_image(request: ImageRequest = Body(...)):
         raise HTTPException(status_code=500, detail=result)
     return AnalysisResponse(success=True, result=result)
 
+
+@cache_decorator
+def read_file(file_path):
+    file_text_list = read_file_content(file_path)
+    file_text = "\n".join(file_text_list)
+    return file_text
+
 @app.post("/file", response_model=AnalysisResponse, summary="识别文件内容")
 async def handle_recognize_file(request: FileRequest = Body(...)):
     """
@@ -102,10 +110,7 @@ async def handle_recognize_file(request: FileRequest = Body(...)):
             if not os.path.exists(file_path):
                 raise HTTPException(status_code=400, detail=f"文件未找到: {file_path}")
             temp_file_path = file_path
-
-        file_text_list = read_file_content(temp_file_path)
-        file_text = "\n".join(file_text_list)
-
+        file_text= read_file(temp_file_path)
         if not file_text or file_text.isspace():
             return AnalysisResponse(success=True, result="文件内容为空或无法提取。")
 

@@ -18,7 +18,7 @@ from functools import wraps
 import tika
 from tika import parser as tikaParser
 tika_server = r"./bin/tika-server.jar"
-assert os.path.exists(tika_server), "tika-server.jar not found"
+assert os.path.exists(tika_server), f"tika-server.jar not found: {tika_server}"
 TIKA_SERVER_JAR = f"file:///{tika_server}"
 os.environ['TIKA_SERVER_JAR'] = TIKA_SERVER_JAR
 def read_file_content(file_path):

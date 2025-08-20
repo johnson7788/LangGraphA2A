@@ -17,6 +17,15 @@ services:
       - "10000:10000"
     network_mode: bridge
     restart: unless-stopped
+  image_api:
+    container_name: evidenceii_image_api
+    build:
+      context: ./backend/image_api
+      dockerfile: Dockerfile
+    ports:
+      - "9700:9700"
+    network_mode: bridge
+    restart: unless-stopped
   mq_backend:
     container_name: evidenceii_mq_backend
     build:

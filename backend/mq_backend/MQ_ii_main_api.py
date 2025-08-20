@@ -406,7 +406,6 @@ def handle_rabbit_queue_message(rabbit_message):
     if not attachment:
         attachment = {}
     tools = attachment.get("tools", [])
-    call_tools = rabbit_message.get('callTools', True)
 
     if function_id == 8:
         # Agent RAG的问答
