@@ -6,6 +6,9 @@ from fastapi import FastAPI, HTTPException, Body
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import requests
+import tempfile
+from urllib.parse import urlparse
 
 # 从其他模块导入核心功能
 from read_image import recognize_image_scene
@@ -68,21 +71,45 @@ async def handle_recognize_image(request: ImageRequest = Body(...)):
 @app.post("/file", response_model=AnalysisResponse, summary="识别文件内容")
 async def handle_recognize_file(request: FileRequest = Body(...)):
     """
-    接收文件路径和问题，提取文件内容，并进行分析和解答。
+    接收文件路径或URL和问题，提取文件内容，并进行分析和解答。
     """
     print(f"收到文件识别请求: path='{request.file_path}', question='{request.question}'")
     try:
-        # 1. 提取文件内容
-        if not os.path.exists(request.file_path):
-            raise HTTPException(status_code=400, detail=f"文件未找到: {request.file_path}")
-        
-        file_text_list = read_file_content(request.file_path)
+        file_path = request.file_path
+        is_url = file_path.startswith("http://") or file_path.startswith("https://")
+
+        if is_url:
+            print(f"文件路径是一个URL, 开始下载: {file_path}")
+            try:
+                response = requests.get(file_path, stream=True)
+                response.raise_for_status()
+                
+                # 使用urllib.parse来获取文件名
+                parsed_url = urlparse(file_path)
+                file_name = os.path.basename(parsed_url.path) if parsed_url.path else "downloaded_file"
+
+                with tempfile.NamedTemporaryFile(delete=False, suffix=f"_{file_name}") as temp_file:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        temp_file.write(chunk)
+                    temp_file_path = temp_file.name
+                
+                print(f"文件已下载到临时路径: {temp_file_path}")
+                
+            except requests.exceptions.RequestException as e:
+                raise HTTPException(status_code=400, detail=f"下载文件失败: {e}")
+        else:
+            print(f"用户提供的是本地文件: {file_path}")
+            if not os.path.exists(file_path):
+                raise HTTPException(status_code=400, detail=f"文件未找到: {file_path}")
+            temp_file_path = file_path
+
+        file_text_list = read_file_content(temp_file_path)
         file_text = "\n".join(file_text_list)
-        
+
         if not file_text or file_text.isspace():
             return AnalysisResponse(success=True, result="文件内容为空或无法提取。")
-            
-        return AnalysisResponse(success=True, result=result)
+
+        return AnalysisResponse(success=True, result=file_text)
 
     except Exception as e:
         print(f"处理文件识别请求时发生错误: {e}")
