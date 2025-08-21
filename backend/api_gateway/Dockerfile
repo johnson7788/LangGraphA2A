@@ -1,6 +1,8 @@
 # Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
+ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 LC_ALL=C.UTF-8 LANG=C.UTF-8
+
 # Set the working directory in the container
 WORKDIR /app
 
