@@ -406,3 +406,20 @@ def update_favorite_pets(
     """
     user_to_pets[user_id] = pets
 ```
+
+# langgraph的add_conditional_edges
+graph.add_conditional_edges(
+    source="router",
+    path=router_node,                 # 你的 router_node(state)-> "executor" 或 END
+    path_map={"executor": "executor", END: END}
+)
+当 router_node(state) 返回 "executor" 时，流转到执行器；
+当返回 END 时，图直接结束。这正是“计划已全部 DONE/SKIPPED 就结束，否则继续执行”的分流。
+
+# 对比[stream_langgraph.py](..%2Fexample%2Fstream_langgraph.py)和[langgraph_planner.py](..%2Fexample%2Flanggraph_planner.py)
+create_react_agent 是 LangGraph 官方“预制”的 ReAct 回路（Reason+Act）——给它一个大模型和一组工具，它就会按 对话消息（messages） 驱动，让模型自己“想下一步→挑工具→调用→继续对话”。适合快速做问答/检索类 Agent。
+build_app() 是你手写的 自定义状态机/工作流——显式定义 planner → router → executor 的节点与条件边、重试与“打补丁”，用 自定义 state dict 驱动。适合可控的多步流程编排、失败恢复与可视化可追踪。
+要快：临时做个“带工具的问答机器人 / 资料检索助手”
+→ 用 create_react_agent，最少代码、开箱即用。
+要稳：需要多步编排、失败可恢复、确定顺序与策略（如主源失败退备源、限次重试、若仍失败则跳过）
+→ 用这种 build_app() 自定义图（甚至把 create_react_agent 作为某个节点嵌进去）。
