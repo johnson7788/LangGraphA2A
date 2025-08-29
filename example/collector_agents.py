@@ -344,7 +344,7 @@ def plan_queries(topic: str, state: Annotated[AgentState, InjectedState], tool_c
     old = state.get("queries", [])
     new = list(dict.fromkeys(old + queries))
     new_msg = json.dumps(new, ensure_ascii=False)
-    logger.info("Planner | %d queries", new_msg)
+    logger.info(f"Planner | %d queries: {new_msg}")
     return Command(update={"queries": new, "messages": [ToolMessage(content=new_msg, tool_call_id=tool_call_id)]})
 
 
@@ -391,17 +391,17 @@ def paper_worker(paper: PaperMeta) -> List[Candidate]:
 
 @tool
 def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId], batch_size: int = 5) -> Any:
-    """从 papers_queue 取若干篇，读取PDF并抽取候选创新点，写入 candidates_buffer 与 visited_ids。"""
+    """从 papers_queue 取若干篇，读取文章并抽取候选创新点，写入 candidates_buffer 与 visited_ids。"""
     q: List[PaperMeta] = state.get("papers_queue", [])
+    # 读取过的文章
     visited: Set[str] = set(state.get("visited_ids", set()))
-
     batch: List[PaperMeta] = []
     for p in q:
         if p.id not in visited and len(batch) < batch_size:
             batch.append(p)
     if not batch:
         logger.info("Batch | no papers to process")
-        return {}
+        return Command(update={"messages": [ToolMessage(content="没有待处理的论文了。", tool_call_id=tool_call_id)]})
 
     all_cands: List[Innovation] = []
     for p in batch:
@@ -433,6 +433,7 @@ def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id
         "papers_queue": remaining,
         "candidates_buffer": state.get("candidates_buffer", []) + all_cands,
         "stats": {**state.get("stats", {}), "read": state.get("stats", {}).get("read", 0) + len(batch)},
+        "messages": [ToolMessage(content=f"处理了{len(new_visited)}篇论文。", tool_call_id=tool_call_id)]
     })
 
 
