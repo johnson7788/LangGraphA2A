@@ -52,3 +52,7 @@
 
 # 创新点收集
 [collector_agents.py](collector_agents.py)
+[langgraph_collector.py](langgraph_collector.py)
+
+# 顺序Agent
+https://medium.com/@seahorse.technologies.sl/sequential-agentic-workflow-in-langgraph-0c17d7e0d51e
