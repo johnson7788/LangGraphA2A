@@ -99,7 +99,7 @@ class Innovation(BaseModel):
     evidence: Evidence = Field(default_factory=Evidence)
     confidence: float = 0.7
     novelty: float = 0.7
-    created_at: str = Field(default_factory=lambda: dt.datetime.utcnow().isoformat())
+    created_at: str = Field(default_factory=lambda: dt.datetime.now(dt.timezone.utc).isoformat())
 
 
 class Candidate(BaseModel):
@@ -381,7 +381,7 @@ def search_papers(state: Annotated[AgentState, InjectedState], tool_call_id: Ann
     existing_ids = {f"{p.source}:{p.id}" for p in old_queue}
     new_queue = old_queue + [p for p in merged if f"{p.source}:{p.id}" not in existing_ids and p.id not in visited]
     resulut_msg = f"已经搜索了{len(all_results)} 条结果了。"
-    logger.info("Searcher | queue size -> %d (+%d)", len(new_queue), max(0, len(new_queue) - len(old_queue)))
+    logger.info(f"Searcher 搜索到了{len(new_queue)}篇文献，其中新增{max(0, len(new_queue) - len(old_queue))}篇。")
     return Command(update={"papers_queue": new_queue, "messages": [ToolMessage(content=resulut_msg, tool_call_id=tool_call_id)]})
 
 
@@ -451,7 +451,7 @@ def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id
 
 
 @tool
-def dedupe_merge(state: Annotated[AgentState, InjectedState], sim_threshold: float = 0.85) -> Any:
+def dedupe_merge(state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId], sim_threshold: float = 0.85) -> Any:
     """将 candidates_buffer 合并到 innovations，做语义去重。"""
     existing: List[Innovation] = state.get("innovations", [])
     cands: List[Innovation] = state.get("candidates_buffer", [])
@@ -465,7 +465,8 @@ def dedupe_merge(state: Annotated[AgentState, InjectedState], sim_threshold: flo
         "innovations": merged,
         "seen_keys": seen,
         "candidates_buffer": [],
-        "stats": {**state.get("stats", {}), "new_points": state.get("stats", {}).get("new_points", 0) + new_points}
+        "stats": {**state.get("stats", {}), "new_points": state.get("stats", {}).get("new_points", 0) + new_points},
+        "messages": [ToolMessage(content=f"新增了{len(new_points)}个创新点。", tool_call_id=tool_call_id)]
     })
 
 
@@ -553,7 +554,7 @@ def run(topic: str, target_n: int = 50, recursion_limit: int = 200) -> AgentStat
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--topic", type=str, default="LLM 对齐技术", help="主题，例如：LLM 对齐技术")
-    parser.add_argument("--target", dest="target", type=int, default=10, help="目标创新点数量")
+    parser.add_argument("--target", dest="target", type=int, default=5, help="目标创新点数量")
     parser.add_argument("--limit", dest="limit", type=int, default=200, help="递归步数上限")
     args = parser.parse_args()
 
