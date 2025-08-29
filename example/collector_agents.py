@@ -358,11 +358,11 @@ def search_papers(state: Annotated[AgentState, InjectedState], tool_call_id: Ann
     """使用 arXiv API 检索论文，合并去重到 papers_queue。"""
     queries: List[str] = state.get("queries", [])
     all_results: List[PaperMeta] = []
-    for q in queries:
+    for query in queries:
         try:
-            res = arxiv_search(q, max_results=per_query)
+            res = arxiv_search(query, max_results=per_query)
         except Exception as e:
-            logger.warning("Search failed for %r: %s", q, e)
+            logger.warning(f"search_papers: 搜索关键词{query}发生了错误: {e}")
             res = []
         all_results.extend(res)
 
@@ -404,11 +404,14 @@ def paper_worker(paper: PaperMeta) -> List[Candidate]:
 @tool
 def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId]) -> Any:
     """从 papers_queue 取所有要处理的论文内容，读取文章并抽取候选创新点，写入 candidates_buffer 与 visited_ids。"""
-    q: List[PaperMeta] = state.get("papers_queue", [])
+    papers_queue: List[PaperMeta] = state.get("papers_queue", [])
+    print(f"只保留6篇论文进行处理")
+    papers_queue = papers_queue[:6]
     # 读取过的文章
     visited: Set[str] = set(state.get("visited_ids", set()))
+    print(f"现有{len(papers_queue)}篇论文，其中已处理{len(visited)}篇。")
     batch: List[PaperMeta] = []
-    for p in q:
+    for p in papers_queue:
         if p.id not in visited:
             batch.append(p)
     if not batch:
@@ -416,29 +419,30 @@ def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id
         return Command(update={"messages": [ToolMessage(content="没有待处理的论文了。", tool_call_id=tool_call_id)]})
 
     all_cands: List[Innovation] = []
-    for p in batch:
-        cands = paper_worker(p)
-        for c in cands:
-            canonical = c.text
+    for one_paper in batch:
+        #cands代表候选创新点
+        cands = paper_worker(one_paper)
+        for one_cand in cands:
+            canonical = one_cand.text
             # 创新点收集
             h = hash_key(canonical)
             inv = Innovation(
-                text=c.text,
+                text=one_cand.text,
                 canonical=canonical,
                 hash=h,
-                paper_id=p.id,
-                paper_title=p.title,
-                source_url=p.url,
-                evidence=Evidence(quote=c.evidence_quote or "", loc=c.loc or ""),
-                confidence=float(c.confidence or 0.7),
-                novelty=float(c.novelty or 0.7),
+                paper_id=one_paper.id,
+                paper_title=one_paper.title,
+                source_url=one_paper.url,
+                evidence=Evidence(quote=one_cand.evidence_quote or "", loc=one_cand.loc or ""),
+                confidence=float(one_cand.confidence or 0.7),
+                novelty=float(one_cand.novelty or 0.7),
             )
             all_cands.append(inv)
 
     new_visited = visited | {p.id for p in batch}
 
     # 更新队列（移除已处理）
-    remaining = [p for p in q if p.id not in new_visited]
+    remaining = [p for p in papers_queue if p.id not in new_visited]
 
     logger.info("Batch | processed %d papers, got %d candidates", len(batch), len(all_cands))
     return Command(update={
