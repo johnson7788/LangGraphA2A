@@ -27,7 +27,6 @@ import requests
 import dotenv
 from pydantic import BaseModel, Field
 from pydantic import TypeAdapter
-from dotenv import load_dotenv
 # LangChain / LangGraph
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.tools import tool,InjectedToolCallId
@@ -69,9 +68,7 @@ def setup_logging() -> logging.Logger:
     logger.debug("Logging initialized. Level=%s", level_name)
     return logger
 
-
 setup_logging()
-load_dotenv()
 
 # ===================== Data Models =====================
 class PaperMeta(BaseModel):
@@ -346,8 +343,9 @@ def plan_queries(topic: str, state: Annotated[AgentState, InjectedState], tool_c
 
     old = state.get("queries", [])
     new = list(dict.fromkeys(old + queries))
+    new_msg = json.dumps(new, ensure_ascii=False)
     logger.info("Planner | %d queries", len(new))
-    return Command(update={"queries": new, "messages": [ToolMessage(content=new, tool_call_id=tool_call_id)]})
+    return Command(update={"queries": new, "messages": [ToolMessage(content=new_msg, tool_call_id=tool_call_id)]})
 
 
 @tool
@@ -377,9 +375,9 @@ def search_papers(state: Annotated[AgentState, InjectedState], tool_call_id: Ann
     old_queue: List[PaperMeta] = state.get("papers_queue", [])
     existing_ids = {f"{p.source}:{p.id}" for p in old_queue}
     new_queue = old_queue + [p for p in merged if f"{p.source}:{p.id}" not in existing_ids and p.id not in visited]
-
+    queus_msg = json.dumps(new_queue, ensure_ascii=False)
     logger.info("Searcher | queue size -> %d (+%d)", len(new_queue), max(0, len(new_queue) - len(old_queue)))
-    return Command(update={"papers_queue": new_queue, "messages": [ToolMessage(content=new_queue, tool_call_id=tool_call_id)]})
+    return Command(update={"papers_queue": new_queue, "messages": [ToolMessage(content=queus_msg, tool_call_id=tool_call_id)]})
 
 
 # 子图：单篇论文的读取 + 抽取
