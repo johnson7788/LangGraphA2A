@@ -30,7 +30,8 @@ from pydantic import TypeAdapter
 from dotenv import load_dotenv
 # LangChain / LangGraph
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from langchain_core.tools import tool
+from langchain_core.tools import tool,InjectedToolCallId
+from langchain_core.messages import BaseMessage, ToolMessage
 from langgraph.prebuilt import create_react_agent, InjectedState
 from langgraph.types import Command
 from zai import ZhipuAiClient   # pip install zai-sdk
@@ -331,7 +332,7 @@ class AgentState(TypedDict, total=False):
 
 # ===================== Tools =====================
 @tool
-def plan_queries(topic: str, state: Annotated[AgentState, InjectedState]) -> Any:
+def plan_queries(topic: str, state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId]) -> Any:
     """将主题扩展为若干检索式，写入 state['queries']。"""
     prompt = (
         "请为以下主题生成 6-10 条搜索关键词，按行分隔关键词，要求：每条≤8个词；尽量英文关键词；\n\n主题：" + topic
@@ -346,11 +347,11 @@ def plan_queries(topic: str, state: Annotated[AgentState, InjectedState]) -> Any
     old = state.get("queries", [])
     new = list(dict.fromkeys(old + queries))
     logger.info("Planner | %d queries", len(new))
-    return Command(update={"queries": new})
+    return Command(update={"queries": new, "messages": [ToolMessage(content=new, tool_call_id=tool_call_id)]})
 
 
 @tool
-def search_papers(state: Annotated[AgentState, InjectedState], per_query: int = 10) -> Any:
+def search_papers(state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId], per_query: int = 10) -> Any:
     """使用 arXiv API 检索论文，合并去重到 papers_queue。"""
     queries: List[str] = state.get("queries", [])
     all_results: List[PaperMeta] = []
@@ -378,7 +379,7 @@ def search_papers(state: Annotated[AgentState, InjectedState], per_query: int = 
     new_queue = old_queue + [p for p in merged if f"{p.source}:{p.id}" not in existing_ids and p.id not in visited]
 
     logger.info("Searcher | queue size -> %d (+%d)", len(new_queue), max(0, len(new_queue) - len(old_queue)))
-    return Command(update={"papers_queue": new_queue})
+    return Command(update={"papers_queue": new_queue, "messages": [ToolMessage(content=new_queue, tool_call_id=tool_call_id)]})
 
 
 # 子图：单篇论文的读取 + 抽取
