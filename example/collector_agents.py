@@ -29,6 +29,7 @@ from pydantic import BaseModel, Field
 from pydantic import TypeAdapter
 from cache_utils import cache_decorator
 # LangChain / LangGraph
+from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage, HumanMessage
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.tools import tool,InjectedToolCallId
 from langchain_core.messages import BaseMessage, ToolMessage
@@ -254,15 +255,15 @@ def extract_innovations_with_llm(text: str, max_chars: int = 12000, max_items: i
         return []
     # 截断，避免超长
     snippet = text[:max_chars]
-    schema = CandidateList
-    structured_llm = llm.with_structured_output(schema)  # Pydantic 结构化输出
+    structured_llm = llm.with_structured_output(schema=CandidateList)  # Pydantic 结构化输出
     try:
-        result: CandidateList = structured_llm.invoke({
-            "messages": [
-                {"role": "system", "content": EXTRACT_PROMPT + f" 限制最多 {max_items} 条。"},
-                {"role": "user", "content": snippet},
-            ]
-        })
+        messages = [
+            SystemMessage(content=EXTRACT_PROMPT + f" 限制最多 {max_items} 条。"),
+            HumanMessage(content=snippet),
+        ]
+        result = structured_llm.invoke(messages)
+        if isinstance(result, dict):
+            result = CandidateList(**result)
         return result.items
     except Exception as e:
         logger.warning("LLM extract failed: %s", e)

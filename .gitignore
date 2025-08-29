@@ -58,3 +58,4 @@ cache
 backend/personal_db/temp_download
 backend/personal_db/cache
 backend/image_api/cache
+example/innovation.db
