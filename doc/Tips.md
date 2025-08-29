@@ -415,6 +415,19 @@ graph.add_conditional_edges(
 )
 当 router_node(state) 返回 "executor" 时，流转到执行器；
 当返回 END 时，图直接结束。这正是“计划已全部 DONE/SKIPPED 就结束，否则继续执行”的分流。
+source：起始节点名（从这个节点“走出去”）。
+langgraph.com.cn
+
+path：决定下一跳的“路由器”。它可以返回：
+
+一个节点名（str）→ 单分支；
+
+一个节点名列表（list[str]）→ 并行扇出；
+
+END → 停止图执行。
+langgraph.com.cn
+
+path_map（可选）：把 path 返回的“标签”映射到实际节点名。若省略，path 就必须直接返回节点名。提供 path_map 或为 path 的返回值写上精确的类型提示（如 Literal["foo","__end__"]），能让可视化更准确，不会被当成“可能去任意节点”。
 
 # 对比[stream_langgraph.py](..%2Fexample%2Fstream_langgraph.py)和[langgraph_planner.py](..%2Fexample%2Flanggraph_planner.py)
 create_react_agent 是 LangGraph 官方“预制”的 ReAct 回路（Reason+Act）——给它一个大模型和一组工具，它就会按 对话消息（messages） 驱动，让模型自己“想下一步→挑工具→调用→继续对话”。适合快速做问答/检索类 Agent。
