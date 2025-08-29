@@ -3,7 +3,7 @@
 # @Date  : 2025/08/29
 # @File  : innovation_collector.py
 # @Author: johnson (adapted by ChatGPT)
-# @Desc  : Paper Innovation Collector — LangGraph multi-agent (Supervisor + Tools)
+# @Desc  : 使用搜索引擎搜索一些不重复的创新点
 
 from __future__ import annotations
 import os
@@ -19,8 +19,9 @@ import logging
 import hashlib
 import argparse
 import datetime as dt
-from typing import Annotated, List, Dict, Any, Tuple, Optional, Set
-
+from typing import Annotated, List, Dict, Any, Tuple, Optional, Set, TypedDict
+from langchain_core.messages import BaseMessage
+from langgraph.graph import add_messages
 import numpy as np
 import requests
 import dotenv
@@ -233,7 +234,6 @@ def arxiv_search(keyword: str, max_results: int = 20) -> List[PaperMeta]:
     except Exception as e:
         logger.exception("WebSearch | error during search: %s", e)
         return []
-    return out
 
 # ===================== LLMs =====================
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
@@ -313,8 +313,20 @@ def semantic_dedupe(
 
 
 # ===================== Agent State =====================
-class AgentState(Dict[str, Any]):
-    pass
+class AgentState(TypedDict, total=False):
+    # create_react_agent 要求的两个必需字段：
+    messages: Annotated[List[BaseMessage], add_messages]
+    remaining_steps: int
+    # 你自己的业务状态（没有聚合器就按最后写入覆盖）：
+    topic: str
+    target_n: int
+    queries: List[str]
+    papers_queue: List[PaperMeta]
+    visited_ids: Set[str]
+    innovations: List[Innovation]
+    seen_keys: Set[str]
+    candidates_buffer: List[Innovation]
+    stats: Dict[str, Any]
 
 
 # ===================== Tools =====================
@@ -326,7 +338,7 @@ def plan_queries(topic: str, state: Annotated[AgentState, InjectedState]) -> Any
     )
     try:
         resp = llm.invoke([{"role": "user", "content": prompt}])
-        queries = resp.content.split()
+        queries = [line.strip() for line in str(resp.content).splitlines() if line.strip()]
     except Exception as e:
         logger.warning("plan_queries LLM failed: %s", e)
         queries = [topic]
@@ -499,7 +511,7 @@ supervisor = create_react_agent(
     model=llm,
     tools=[plan_queries, search_papers, batch_read_extract, dedupe_merge, store_to_db, progress_check],
     prompt=SUP_PROMPT,
-    state_schema=dict,
+    state_schema=AgentState,
 )
 
 # ===================== Run =====================
@@ -509,6 +521,7 @@ def run(topic: str, target_n: int = 50, recursion_limit: int = 200) -> AgentStat
         "topic": topic,
         "target_n": target_n,
         "queries": [],
+        "messages": [],
         "papers_queue": [],
         "visited_ids": set(),
         "innovations": [],
