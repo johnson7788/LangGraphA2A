@@ -88,7 +88,7 @@ class Evidence(BaseModel):
     quote: str = ""
     loc: str = ""  # 页码/段落/句号索引等
 
-
+#创新点包含哪些字段
 class Innovation(BaseModel):
     text: str
     canonical: str
@@ -385,6 +385,13 @@ def search_papers(state: Annotated[AgentState, InjectedState], tool_call_id: Ann
 
 # 子图：单篇论文的读取 + 抽取
 def paper_worker(paper: PaperMeta) -> List[Candidate]:
+    """
+    读取论文，并提取创新点，返回候选的可能创新点Candidate
+    Args:
+        paper:
+    Returns:
+
+    """
     text = paper.snippet
     if not text:
         return []
@@ -411,6 +418,7 @@ def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id
         cands = paper_worker(p)
         for c in cands:
             canonical = c.text
+            # 创新点收集
             h = hash_key(canonical)
             inv = Innovation(
                 text=c.text,
@@ -465,6 +473,7 @@ def store_to_db(state: Annotated[AgentState, InjectedState], db_path: str = "inn
     db = DB(db_path)
     # 已访问的论文里，可能没有全部保存在 papers_queue。因此汇总：
     papers_pool: List[PaperMeta] = state.get("papers_queue", [])
+    logger.info(f"store_to_db 存储创新点到数据库: {papers_pool}")
     # 这里也可以在 search 阶段就 upsert
     try:
         db.upsert_papers(papers_pool)
@@ -480,7 +489,7 @@ def store_to_db(state: Annotated[AgentState, InjectedState], db_path: str = "inn
 
 @tool
 def progress_check(state: Annotated[AgentState, InjectedState]) -> Any:
-    """检查是否达标；若达标返回 Command(goto="__end__") 结束。"""
+    """检查创新点是否达到条数；若达标返回 Command(goto="__end__") 结束。"""
     n = len(state.get("innovations", []))
     target = int(state.get("target_n", 50))
     no_gain = int(state.get("stats", {}).get("no_gain_steps", 0))
