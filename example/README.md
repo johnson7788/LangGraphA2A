@@ -49,3 +49,6 @@
 
 # 多Agent携作
 [multi_agent.py](multi_agent.py)
+
+# 创新点收集
+[collector_agents.py](collector_agents.py)

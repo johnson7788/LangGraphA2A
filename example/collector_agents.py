@@ -14,6 +14,7 @@ import time
 import math
 import uuid
 import queue
+from tqdm import tqdm
 import sqlite3
 import logging
 import hashlib
@@ -419,10 +420,10 @@ def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id
         return Command(update={"messages": [ToolMessage(content="没有待处理的论文了。", tool_call_id=tool_call_id)]})
 
     all_cands: List[Innovation] = []
-    for one_paper in batch:
+    for one_paper in tqdm(batch, desc="处理论文"):
         #cands代表候选创新点
         cands = paper_worker(one_paper)
-        for one_cand in cands:
+        for one_cand in tqdm(cands, desc="处理创新点"):
             canonical = one_cand.text
             # 创新点收集
             h = hash_key(canonical)
