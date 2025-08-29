@@ -384,7 +384,7 @@ class CollectorAgent:
             "stats": {"read": 0, "new_points": 0, "no_gain_steps": 0, "_prev_added": 0},
         }
 
-        # 第 0 步：生成检索式
+        # 第 0 步：生成检索词
         state["queries"] = plan_queries(topic, old=state["queries"]) or [topic]
 
         for round_idx in range(1, max_rounds + 1):
