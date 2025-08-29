@@ -68,13 +68,8 @@ def setup_logging() -> logging.Logger:
 setup_logging()
 
 # ===================== External Clients =====================
-# ZhipuAI Web Search（与原实现兼容）
-try:
-    from zai import ZhipuAiClient   # pip install zai-sdk
-    WebSearchClient = ZhipuAiClient(api_key=os.environ.get("ZHIPU_API_KEY"))
-except Exception:
-    WebSearchClient = None
-    logger.warning("未安装或未配置 zai-sdk；web 搜索将不可用。")
+from zai import ZhipuAiClient  # pip install zai-sdk
+WebSearchClient = ZhipuAiClient(api_key=os.environ.get("ZHIPU_API_KEY"))
 
 # LangChain OpenAI（用于 LLM 结构化抽取 & Embedding 去重）
 try:
