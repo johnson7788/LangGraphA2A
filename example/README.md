@@ -40,3 +40,12 @@
 
 ## 由开发者注入的参数（不经过 LLM)，即LLM不可见工具的部分参数
 [invoke_inject_tool_arg.py](invoke_inject_tool_arg.py)
+
+# 按计划执行agent
+[langgraph_planner.py](langgraph_planner.py)
+
+# 制定计划，逐个执行并修订计划
+[plan_and_execute.md](plan_and_execute.md)
+
+# 多Agent携作
+[multi_agent.py](multi_agent.py)

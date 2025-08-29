@@ -22,9 +22,8 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langgraph.prebuilt import create_react_agent
 from langgraph.graph import StateGraph, START, END
-
 from zai import ZhipuAiClient   # pip install zai-sdk
-
+dotenv.load_dotenv()
 # ============ Logging Setup ============
 def setup_logging() -> logging.Logger:
     """
@@ -69,7 +68,7 @@ def setup_logging() -> logging.Logger:
 
 logger = setup_logging()
 
-dotenv.load_dotenv()
+
 if "ZHIPU_API_KEY" not in os.environ:
     logger.warning("ZHIPU_API_KEY not found in environment. Web search will fail without it.")
 else:
