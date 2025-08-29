@@ -238,7 +238,9 @@ def arxiv_search(keyword: str, max_results: int = 20) -> List[PaperMeta]:
 
 # ===================== LLMs =====================
 OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+# 用于生成计划和提取创新点的模型
 llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0)
+# 用于计算创新点之间的相似性，用于去重
 emb = OpenAIEmbeddings(model=os.getenv("OPENAI_EMBED_MODEL", "text-embedding-3-small"))
 
 
