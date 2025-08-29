@@ -27,6 +27,7 @@ import requests
 import dotenv
 from pydantic import BaseModel, Field
 from pydantic import TypeAdapter
+from cache_utils import cache_decorator
 # LangChain / LangGraph
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from langchain_core.tools import tool,InjectedToolCallId
@@ -207,6 +208,7 @@ class DB:
 def hash_key(text: str) -> str:
     return hashlib.blake2b(text.encode("utf-8"), digest_size=16).hexdigest()
 
+@cache_decorator
 def arxiv_search(keyword: str, max_results: int = 20) -> List[PaperMeta]:
     logger.info("WebSearch | query=%r", keyword)
     try:
@@ -390,14 +392,14 @@ def paper_worker(paper: PaperMeta) -> List[Candidate]:
 
 
 @tool
-def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId], batch_size: int = 5) -> Any:
-    """从 papers_queue 取若干篇，读取文章并抽取候选创新点，写入 candidates_buffer 与 visited_ids。"""
+def batch_read_extract(state: Annotated[AgentState, InjectedState], tool_call_id: Annotated[str, InjectedToolCallId]) -> Any:
+    """从 papers_queue 取所有要处理的论文内容，读取文章并抽取候选创新点，写入 candidates_buffer 与 visited_ids。"""
     q: List[PaperMeta] = state.get("papers_queue", [])
     # 读取过的文章
     visited: Set[str] = set(state.get("visited_ids", set()))
     batch: List[PaperMeta] = []
     for p in q:
-        if p.id not in visited and len(batch) < batch_size:
+        if p.id not in visited:
             batch.append(p)
     if not batch:
         logger.info("Batch | no papers to process")
