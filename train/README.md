@@ -1,6 +1,10 @@
 # Langgraph ART 训练模型, 单Agent结构
 
+## 环境准备
+[prepare.md](prepare.md)
+
 ## 搜索输出
+```
 WebSearchClient = ZhipuAiClient(api_key=os.environ["ZHIPU_API_KEY"])
 response = WebSearchClient.web_search.web_search(
         search_engine="search_std",
@@ -20,6 +24,7 @@ response = WebSearchClient.web_search.web_search(
       "publish_date": "2025-08-25"
     }
  ]
+```
 
 ## 配置
 cd RLDecisionAgent/backend/ART_mcp-rl

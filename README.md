@@ -168,6 +168,47 @@ npm run dev
 启动成功后，即可在浏览器中打开 `http://localhost:5173`开始使用。
 
 
+# 模型训练 (Reinforcement Learning)
+
+本项目支持基于 Langgraph ART 的强化学习训练，以优化 Agent 的决策能力。
+
+### 1. 环境准备
+
+进入 `train` 目录，安装所需的 Python 依赖包。
+```bash
+cd train
+pip install -r requirements.txt
+```
+
+### 2. 配置环境
+
+从模板文件 `env_template` 创建您的环境配置文件 `.env`，并填入必要的 API Keys (例如 `ZHIPU_API_KEY`)。
+```bash
+cp env_template .env
+```
+
+### 3. 启动训练
+
+配置好环境后，执行以下命令开始训练。您可以根据需要指定使用的 GPU。
+```bash
+export CUDA_VISIBLE_DEVICES=1
+export HF_ENDPOINT=https://hf-mirror.com
+python train.py
+```
+
+### 4. 模型测试
+
+训练完成后，可以运行以下命令来测试模型性能：
+```bash
+python model_test.py
+```
+
+### 5. 监控与日志
+
+训练过程中的日志和指标可以通过 `wandb` 进行监控。
+访问地址: [http://192.168.100.8:3005/johnson/web-search-agent-training](http://192.168.100.8:3005/johnson/web-search-agent-training)
+
+
 # 自定义langgraph工具和MCP工具
 修改[tools.py](backend%2Fknowledge_agent%2Ftools.py)文件和创建[mcp_config.json](backend%2Fknowledge_agent%2Fmcp_config.json)
 

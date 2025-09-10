@@ -193,7 +193,7 @@ def personal_db_search_api(user_id: int, query: str, topk=3):
     headers = {'content-type': 'application/json'}
     try:
         # 发送POST请求
-        response = httpx.post(url, json=data, headers=headers, timeout=20.0)
+        response = httpx.post(url, json=data, headers=headers, timeout=20.0, trust_env=False)
 
         # 检查HTTP状态码
         response.raise_for_status()
