@@ -55,7 +55,7 @@ class MQClientTestCase(unittest.IsolatedAsyncioTestCase):
 #                     "type": "text"
 #                 },
 #                 {
-#                     "url": "https://infoxmed20.infox-med.com/infoxmed20/1755507947590-iOS-IMG.jpg",
+#                     "url": "https://wallpapercave.com/wp/wp8788340.jpg",
 #                     "type": "image"
 #                 }
 #             ]
@@ -64,7 +64,7 @@ class MQClientTestCase(unittest.IsolatedAsyncioTestCase):
 #     "type": 1,
 #     "attachment": {
 #         "images": [{
-#             "url": "https://infoxmed20.infox-med.com/infoxmed20/1755507947590-iOS-IMG.jpg",
+#             "url": "https://wallpapercave.com/wp/wp8788340.jpg",
 #             "type": "image"
 #         }]
 #     },

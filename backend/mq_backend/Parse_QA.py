@@ -186,7 +186,7 @@ if __name__ == "__main__":
             "role": "user",
             "content": [
                 {"text": "您好，看一下图片是什么内容", "type": "text"},
-                {"url": "https://infoxmed20.infox-med.com/infoxmed20/1755507947590-iOS-IMG.jpg", "type": "image"},
+                {"url": "https://wallpapercave.com/wp/wp8788340.jpg", "type": "image"},
             ]
         }
     ]
